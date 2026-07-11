@@ -11,6 +11,7 @@ import {
 import './styles.css';
 
 const money = (value) => `RWF ${Number(value || 0).toLocaleString()}`;
+const logoSrc = '/mdfc-logo.png';
 
 function App() {
   const [role, setRole] = useState('manager');
@@ -91,7 +92,7 @@ function Login({ selectedRole, setSelectedRole, onLogin }) {
   return (
     <section className="login-screen">
       <div className="login-card">
-        <div className="mark">PT</div>
+        <img className="login-logo" src={logoSrc} alt="Medical Doctors For Choice logo" />
         <p className="eyebrow">MDFC ProjTrack</p>
         <h1>Project Management System</h1>
         <p className="muted">Choose a role to preview the workspace.</p>
@@ -121,7 +122,9 @@ function Sidebar({ role, activeRole, page, navItems, setPage, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-mark">PT</div>
+        <div className="brand-mark logo-mark">
+          <img src={logoSrc} alt="Medical Doctors For Choice logo" />
+        </div>
         <div>
           <strong>ProjTrack</strong>
           <span>MDFC Rwanda</span>
