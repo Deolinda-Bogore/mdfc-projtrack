@@ -1,12 +1,2363 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MDFC ProjTrack</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MDFC Program Tracker</title>
+<style>
+:root{
+  --maroon:#8B0000;--maroon-dark:#5C0000;--maroon-mid:#A50000;
+  --maroon-light:#FFF0F0;--maroon-border:#F5C6C6;
+  --accent:#1D9E75;--accent-hover:#0F6E56;
+  --green:#1D9E75;--green-dark:#0F6E56;--green-light:#E1F5EE;
+  --blue:#1A56DB;--blue-light:#EBF5FF;
+  --amber:#B45309;--amber-light:#FEF3C7;
+  --gray:#64748B;--gray-light:#F1F5F9;--gray-border:#E2E8F0;
+  --text:#1A1A2E;--text-2:#64748B;--text-3:#94A3B8;
+  --surface:#FFFFFF;--bg:#F7F8FC;
+  --sidebar:#0D3B2E;--sidebar-dark:#081F18;
+  --r:10px;--r-sm:7px;--r-lg:14px;
+  --shadow:0 1px 4px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+/* ── LOGIN ─────────────────────────────────── */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--sidebar-dark) 0%,var(--sidebar) 60%,#8B1A1A 100%);
+  position:relative;overflow-y:auto;padding:24px;
+}
+#login-screen::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.06),transparent 70%);top:-100px;right:-100px;pointer-events:none}
+#login-screen::after{content:'';position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.04),transparent 70%);bottom:-80px;left:-80px;pointer-events:none}
+.login-shell{width:min(1280px,100%);display:grid;grid-template-columns:420px minmax(560px,1fr);gap:24px;align-items:center;position:relative;z-index:1}
+.login-card{background:rgba(255,255,255,.06);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:40px;width:100%;max-width:95vw;box-shadow:0 32px 80px rgba(0,0,0,.5)}
+.login-system-panel{background:rgba(255,255,255,.94);border:1px solid rgba(255,255,255,.28);border-radius:20px;box-shadow:0 32px 80px rgba(0,0,0,.35);overflow:hidden}
+.login-system-title{background:var(--maroon);color:#fff;padding:14px 18px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.login-system-panel .pms-tree{padding:20px 18px}
+.login-system-panel .pms-branch{min-height:280px}
+.login-logo-wrap{text-align:center;margin-bottom:28px}
+.login-logo-mark{width:230px;max-width:100%;height:94px;border-radius:14px;background:#fff;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,.3);padding:12px}
+.login-logo-mark img{width:100%;height:100%;object-fit:contain}
+.login-logo-text{font-size:10px;letter-spacing:.1em;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:4px}
+.login-title{font-size:22px;font-weight:700;color:#fff;margin-bottom:3px}
+.login-sub{font-size:13px;color:rgba(255,255,255,.5)}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.role-chip{padding:12px 8px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.12);cursor:pointer;text-align:center;transition:all .2s;background:rgba(255,255,255,.05)}
+.role-chip:hover,.role-chip.sel{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35)}
+.role-chip-icon{font-size:22px;margin-bottom:5px}
+.role-chip-name{font-size:11px;font-weight:700;color:#fff}
+.role-chip-desc{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+.l-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block}
+.l-input{width:100%;padding:11px 14px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-family:inherit;margin-bottom:13px;outline:none;transition:border-color .2s}
+.l-input:focus{border-color:rgba(255,255,255,.4)}
+.l-input option{background:#5C0000;color:#fff}
+.l-btn{width:100%;padding:13px;border-radius:var(--r-sm);border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:4px}
+.l-btn:hover{background:#F0F0F0;transform:translateY(-1px)}
+
+/* ── APP ─────────────────────────────────── */
+#app{display:none;min-height:100vh}
+
+/* ── SIDEBAR ───────────────────────────────── */
+.sidebar{position:fixed;top:0;left:0;width:224px;height:100vh;background:linear-gradient(180deg,var(--sidebar-dark),var(--sidebar));display:flex;flex-direction:column;z-index:50;overflow-y:auto}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sb-logo-mark{width:48px;height:38px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:4px}
+.sb-logo-mark img{width:100%;height:100%;object-fit:contain}
+.sb-logo-text{font-size:14px;font-weight:700;color:#fff}
+.sb-logo-text small{display:block;font-size:9px;color:rgba(255,255,255,.4);font-weight:400;letter-spacing:.06em;text-transform:uppercase}
+.nav-sec{font-size:9px;font-weight:700;color:rgba(255,255,255,.3);padding:14px 16px 4px;letter-spacing:.1em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.55);transition:all .15s;border-left:3px solid transparent;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.9)}
+.nav-item.active{background:rgba(29,158,117,.25);color:#fff;border-left-color:#1D9E75;font-weight:600}
+.nav-item svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;border-radius:20px;padding:1px 6px;font-size:9px;font-weight:700}
+.sb-user{margin-top:auto;padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:9px}
+.sb-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,.3)}
+.sb-uname{font-size:12px;color:#fff;font-weight:600}
+.sb-urole{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+.logout-btn{margin-left:auto;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.5);font-size:10px;cursor:pointer;font-family:inherit}
+.logout-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+
+/* ── MAIN ──────────────────────────────────── */
+.main{margin-left:224px;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--surface);border-bottom:1px solid var(--gray-border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;box-shadow:0 1px 0 var(--gray-border)}
+.tb-left{display:flex;align-items:center;gap:10px}
+.menu-btn{display:none;width:36px;height:36px;align-items:center;justify-content:center;border:1px solid var(--gray-border);border-radius:var(--r-sm);background:var(--surface);color:var(--text);font-size:18px}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;backdrop-filter:blur(2px)}
+.tb-title{font-size:16px;font-weight:700;color:var(--text)}
+.tb-sub{font-size:11px;color:var(--text-2);margin-top:1px}
+.tb-actions{display:flex;gap:8px}
+.content{flex:1;padding:22px 24px}
+.view{display:none}
+.view.active{display:block;animation:fadeUp .18s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── BUTTONS ─────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--r-sm);font-size:12px;cursor:pointer;border:1px solid var(--gray-border);background:var(--surface);color:var(--text-2);transition:all .15s;font-family:inherit;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--gray-light);border-color:#94A3B8;color:var(--text)}
+.btn.maroon{background:var(--maroon);border-color:var(--maroon);color:#fff}
+.btn.maroon:hover{background:var(--maroon-dark)}
+.btn.gp{background:var(--green);border-color:var(--green);color:#fff}
+.btn.gp:hover{background:var(--green-dark)}
+.btn.ghost-maroon{background:var(--maroon-light);border-color:var(--maroon-border);color:var(--maroon)}
+.btn.ghost-maroon:hover{background:#FFE0E0}
+.btn.green{background:var(--green);border-color:var(--green);color:#fff}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.sm{padding:5px 10px;font-size:11px}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn.danger{background:#DC2626;border-color:#DC2626;color:#fff}
+
+/* ── STATS ─────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border-radius:var(--r);padding:16px 18px;border:1px solid var(--gray-border);position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.stat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.sc-maroon::before{background:var(--maroon)}
+.sc-green::before{background:var(--green)}
+.sc-blue::before{background:var(--blue)}
+.sc-amber::before{background:var(--amber)}
+.sc-gray::before{background:var(--gray)}
+.stat-val{font-size:26px;font-weight:700;color:var(--text)}
+.stat-label{font-size:12px;color:var(--text-2);margin-top:4px;font-weight:500}
+.stat-sub{font-size:11px;color:var(--text-3);margin-top:2px}
+
+/* ── PANEL ─────────────────────────────────── */
+.panel{background:var(--surface);border:1px solid var(--gray-border);border-radius:var(--r);overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow)}
+.panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--gray-border);font-size:11px;font-weight:700;color:var(--surface);background:var(--maroon);text-transform:uppercase;letter-spacing:.06em}
+.panel-hdr .badge{background:rgba(255,255,255,.2);color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px}
+
+/* ── TABLE ─────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--surface);border-bottom:1px solid var(--maroon-dark);background:var(--maroon);text-transform:uppercase;letter-spacing:.05em}
+.tbl td{padding:10px 14px;border-bottom:1px solid #F5F5F5;color:var(--text)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#FFF8F8}
+.tbl td.bold{font-weight:600}
+.tbl td.muted{color:var(--text-2)}
+
+/* ── BADGE ─────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.b-red{background:#FEE2E2;color:#991B1B}
+.b-maroon{background:var(--maroon-light);color:var(--maroon)}
+.b-green{background:#DCFCE7;color:#166534}
+.b-blue{background:var(--blue-light);color:#1E40AF}
+.b-amber{background:var(--amber-light);color:#92400E}
+.b-gray{background:var(--gray-light);color:#475569}
+.b-purple{background:#EDE9FE;color:#5B21B6}
+
+/* ── FILTER BAR ─────────────────────────────── */
+.filter-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{padding:5px 13px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--gray-border);background:var(--surface);color:var(--text-2);font-family:inherit;font-weight:500;transition:all .15s}
+.filter-btn.active{background:var(--green-light);border-color:#86EFAC;color:var(--green-dark);font-weight:700}
+
+/* ── KANBAN ─────────────────────────────────── */
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.k-col-hdr{padding:8px 12px;border-radius:var(--r-sm);font-size:10px;font-weight:700;color:#fff;margin-bottom:10px;letter-spacing:.04em}
+.k-card{background:var(--surface);border:1px solid var(--gray-border);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;cursor:pointer;border-left-width:3px;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.k-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.1);transform:translateY(-1px)}
+.k-card-title{font-weight:600;color:var(--text);margin-bottom:4px;font-size:12px;line-height:1.35}
+.k-card-proj{color:var(--text-3);font-size:10px;margin-bottom:7px}
+.k-card-foot{display:flex;align-items:center;justify-content:space-between}
+.avatar{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+.self-assign-btn{width:100%;padding:8px;border:1px dashed var(--gray-border);border-radius:var(--r-sm);background:var(--gray-light);color:var(--text-2);font-size:11px;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s;text-align:center;margin-bottom:8px}
+.self-assign-btn:hover{background:var(--maroon-light);border-color:var(--maroon-border);color:var(--maroon)}
+
+/* ── PROJECT CARD ──────────────────────────── */
+.proj-card{background:var(--surface);border:1px solid var(--gray-border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:all .15s}
+.proj-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.proj-card-top{height:7px}
+.proj-card-body{padding:18px}
+.proj-card-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.proj-card-desc{font-size:12px;color:var(--text-2);margin-bottom:12px;line-height:1.5}
+
+/* ── REQUEST CARD ──────────────────────────── */
+.req-card{background:var(--surface);border:1px solid var(--gray-border);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.req-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:10px}
+.req-title{font-size:14px;font-weight:700}
+.req-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;margin-bottom:12px;padding:10px 12px;background:var(--gray-light);border-radius:var(--r-sm)}
+
+/* ── WORKLOG ─────────────────────────────── */
+.wl-row{display:grid;grid-template-columns:2.2fr 1fr .9fr .7fr 1.2fr;gap:6px;align-items:center;padding:10px 14px;border-bottom:1px solid #F5F5F5;font-size:12px}
+.wl-row:last-child{border-bottom:none}
+.wl-hdr{background:var(--maroon);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+
+/* ── SECTION HEADER ────────────────────────── */
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sec-title{font-size:18px;font-weight:700;color:var(--text)}
+
+/* ── WELCOME BANNER ────────────────────────── */
+.banner{background:linear-gradient(135deg,var(--maroon-dark),var(--maroon));border-radius:var(--r);padding:20px 24px;margin-bottom:20px;color:#fff;position:relative;overflow:hidden}
+.banner::after{content:'';position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.05)}
+.banner-title{font-size:18px;font-weight:700;margin-bottom:3px}
+.banner-sub{font-size:13px;color:rgba(255,255,255,.65)}
+
+/* ── MODAL ─────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(3px)}
+.modal{background:var(--surface);border-radius:var(--r-lg);padding:0;width:520px;max-width:96vw;max-height:94vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-head{background:var(--maroon);color:#fff;padding:18px 22px;border-radius:var(--r-lg) var(--r-lg) 0 0;display:flex;align-items:center;justify-content:space-between}
+.modal-head-title{font-size:15px;font-weight:700}
+.modal-body{padding:22px}
+.form-group{margin-bottom:13px}
+.form-label{font-size:11px;color:var(--text-2);margin-bottom:5px;display:block;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.form-input{width:100%;padding:9px 11px;border-radius:var(--r-sm);border:1px solid var(--gray-border);background:#FAFAFA;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--green);background:var(--surface);box-shadow:0 0 0 3px rgba(29,158,117,.1)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--gray-border)}
+.color-picker-wrap{display:flex;gap:8px;flex-wrap:wrap}
+.color-swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
+.color-swatch.sel{border-color:var(--text);transform:scale(1.15)}
+.upload-zone{border:2px dashed var(--gray-border);border-radius:var(--r-sm);padding:16px;text-align:center;cursor:pointer;font-size:12px;color:var(--text-2);transition:all .15s;background:#FAFAFA}
+.upload-zone:hover{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
+.upload-zone.has-file{border-color:var(--green);background:var(--green-light);color:var(--green-dark)}
+
+/* ── ASSIGN PANEL ──────────────────────────── */
+.assign-panel{background:var(--gray-light);border-radius:var(--r-sm);padding:12px;margin-bottom:10px}
+.assign-member-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s}
+.assign-member-row:hover{background:var(--green-light)}
+.assign-member-row.assigned{background:var(--green-light);font-weight:600}
+
+/* ── PROG BAR ─────────────────────────────── */
+.pw{background:#F1F5F9;border-radius:20px;height:6px;overflow:hidden;margin-top:5px}
+.pb{height:100%;border-radius:20px;transition:width .5s}
+
+/* ── TOAST ─────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--maroon);color:#fff;padding:12px 18px;border-radius:var(--r-sm);font-size:13px;z-index:200;animation:toastIn .3s ease;box-shadow:0 8px 24px rgba(139,0,0,.3);max-width:320px;border-left:4px solid rgba(255,255,255,.4)}
+@keyframes toastIn{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── RESPONSIVE ────────────────────────────── */
+@media(max-width:768px){
+  #login-screen{align-items:flex-start;padding:14px}
+  .login-shell{grid-template-columns:1fr}
+  .login-card{padding:24px;max-width:100%}
+  .login-system-panel{border-radius:16px}
+  .sidebar{transform:translateX(-100%);transition:transform .22s ease}.sidebar.open{transform:translateX(0)}
+  .sidebar-backdrop.show{display:block}
+  .menu-btn{display:inline-flex}
+  .main{margin-left:0}.stat-grid{grid-template-columns:1fr 1fr}
+  .grid2,.grid3,.kanban{grid-template-columns:1fr}
+  .req-meta{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 14px}.content{padding:14px}
+}
+
+/* ── TEAM ROW ──────────────────────────────── */
+.team-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #F5F5F5}
+.team-row:last-child{border-bottom:none}
+
+/* ── DEADLINE ROW ──────────────────────────── */
+.dl-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #F5F5F5}
+.dl-row:last-child{border-bottom:none}
+
+/* ── BUDGET BAR ────────────────────────────── */
+.bb-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F5F5F5;font-size:12px}
+.bb-row:last-child{border-bottom:none}
+.bb-label{width:160px;flex-shrink:0;font-weight:500}
+.bb-track{flex:1;background:#F1F5F9;border-radius:20px;height:8px;overflow:hidden}
+.bb-fill{height:100%;border-radius:20px}
+.bb-pct{width:38px;text-align:right;font-size:11px;font-weight:700}
+
+/* ── REQUISITION FLOW ─────────────────────── */
+.dept-map{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.dept-card{background:var(--surface);border:1px solid var(--gray-border);border-radius:var(--r-sm);padding:12px;box-shadow:var(--shadow);border-top:4px solid var(--green)}
+.dept-card:nth-child(2){border-top-color:#D97706}.dept-card:nth-child(3){border-top-color:#8B0000}.dept-card:nth-child(4){border-top-color:#1D4ED8}.dept-card:nth-child(5){border-top-color:#059669}
+.dept-title{font-size:12px;font-weight:800;color:var(--text);margin-bottom:4px}
+.dept-sub{font-size:10px;color:var(--text-2);line-height:1.35;margin-bottom:8px}
+.dept-fields{display:flex;gap:4px;flex-wrap:wrap}
+.mini-chip{font-size:9px;font-weight:700;color:var(--text-2);background:var(--gray-light);border-radius:20px;padding:3px 7px}
+.req-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;padding:10px 12px;background:#F8FAFC;border:1px solid var(--gray-border);border-radius:var(--r-sm);margin-bottom:12px}
+.req-detail-cell{min-width:0}
+.req-detail-label{font-size:9px;font-weight:800;text-transform:uppercase;color:var(--text-3);letter-spacing:.04em;margin-bottom:3px}
+.req-detail-val{font-size:11px;color:var(--text);font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.golden-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;padding:10px 12px;background:#FFF8F8;border:1px solid var(--maroon-border);border-radius:var(--r-sm);margin:10px 0 12px}
+.golden-cell{min-width:0}
+.golden-label{font-size:8px;font-weight:900;text-transform:uppercase;color:var(--maroon);letter-spacing:.04em;margin-bottom:3px}
+.golden-val{font-size:10px;color:var(--text);font-weight:700;line-height:1.35;overflow-wrap:anywhere}
+.pms-tree{padding:18px 14px 16px}
+.pms-root{width:150px;margin:0 auto;padding:12px 18px;border-radius:var(--r-sm);background:var(--maroon);color:#fff;text-align:center;font-size:20px;font-weight:900;letter-spacing:.08em;box-shadow:var(--shadow)}
+.pms-branches{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:42px}
+.pms-branches::before{content:'';position:absolute;left:16.5%;right:16.5%;top:-22px;height:2px;background:var(--gray-border)}
+.pms-branch{position:relative;border:1px solid var(--gray-border);border-radius:var(--r);background:#fff;padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:all .15s;min-height:245px}
+.pms-branch::before{content:'';position:absolute;top:-22px;left:50%;width:2px;height:22px;background:var(--gray-border)}
+.pms-branch:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.pms-branch.programs{border-top:5px solid var(--green);background:#F0FDF4}
+.pms-branch.finance{border-top:5px solid var(--maroon);background:#FFF8F8}
+.pms-branch.admin{border-top:5px solid var(--blue);background:#EFF6FF}
+.pms-branch-title{font-size:17px;font-weight:900;margin-bottom:4px}
+.pms-branch.programs .pms-branch-title{color:#047857}
+.pms-branch.finance .pms-branch-title{color:var(--maroon)}
+.pms-branch.admin .pms-branch-title{color:#1D4ED8}
+.pms-branch-sub{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:10px}
+.pms-list{list-style:none;display:grid;gap:7px}
+.pms-list li{padding:8px 9px;border-radius:var(--r-sm);background:rgba(255,255,255,.72);border:1px solid rgba(100,116,139,.16);font-size:12px;color:var(--text-2);line-height:1.35}
+.pms-list b{color:var(--text)}
+.pms-note{margin-top:12px;padding:10px 12px;border-radius:var(--r-sm);background:#fff;border:1px dashed var(--gray-border);font-size:11px;color:var(--text-2);line-height:1.5}
+.workflow-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+.workflow-stage{border:1px solid var(--gray-border);border-radius:var(--r-sm);overflow:hidden;background:#fff}
+.workflow-top{padding:8px 10px;background:#F8FAFC;border-bottom:1px solid var(--gray-border)}
+.workflow-label{font-size:10px;font-weight:800;color:var(--text);text-transform:uppercase;letter-spacing:.04em}
+.workflow-dept{font-size:10px;color:var(--text-2);margin-top:2px}
+.workflow-body{padding:9px 10px}
+.wf-row{margin-bottom:7px}
+.wf-row:last-child{margin-bottom:0}
+.wf-k{font-size:9px;font-weight:800;text-transform:uppercase;color:var(--text-3);letter-spacing:.04em;margin-bottom:2px}
+.wf-v{font-size:11px;color:var(--text-2);line-height:1.35;overflow-wrap:anywhere}
+.wf-v strong{color:var(--text)}
+.req-db-wrap{overflow-x:auto;background:#BDEBD6;border-top:1px solid var(--gray-border)}
+.req-db{min-width:2480px;width:100%;border-collapse:collapse;font-size:11px}
+.req-db th,.req-db td{border:1px solid rgba(13,59,46,.18);padding:8px 9px;vertical-align:top;line-height:1.35}
+.req-db thead tr:first-child th{background:#A84832;color:#fff;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.req-db thead tr:nth-child(2) th{background:#F8D9BF;color:#1A1A2E;font-weight:800}
+.req-db td{background:#BDEBD6;color:#173B31}
+.req-db .num{text-align:right;font-weight:800;color:#5C0000;white-space:nowrap}
+.req-db .center{text-align:center}
+.req-db .wide{min-width:210px}
+.req-db .medium{min-width:140px}
+.req-db .status-cell .badge{font-size:9px}
+@media(max-width:1100px){.dept-map,.workflow-grid{grid-template-columns:1fr 1fr}.req-detail-grid{grid-template-columns:1fr 1fr 1fr}.golden-grid{grid-template-columns:1fr 1fr}.pms-branches{grid-template-columns:1fr}.pms-branches::before,.pms-branch::before{display:none}.pms-branches{margin-top:18px}}
+@media(max-width:768px){.dept-map,.workflow-grid,.req-detail-grid,.golden-grid{grid-template-columns:1fr}.pms-tree{padding:14px 10px}.pms-root{width:130px;font-size:18px}.pms-branch{min-height:auto}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ══════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="login-logo-wrap">
+        <div class="login-logo-mark"><img src="mdfc-logo.png" alt="Medical Doctors For Choice logo"></div>
+        <div class="login-logo-text">MDFC PMS</div>
+        <div class="login-title">Project Management System</div>
+        <div class="login-sub">Choose a role to enter the system workspace</div>
+      </div>
+      <label class="l-label">Select your role</label>
+      <div class="role-grid" id="role-grid">
+        <div class="role-chip" onclick="selRole('director',this)"><div class="role-chip-icon">D</div><div class="role-chip-name">Director</div><div class="role-chip-desc">Executive view</div></div>
+        <div class="role-chip sel" onclick="selRole('manager',this)"><div class="role-chip-icon">M</div><div class="role-chip-name">Manager</div><div class="role-chip-desc">Full access</div></div>
+        <div class="role-chip" onclick="selRole('staff',this)"><div class="role-chip-icon">E</div><div class="role-chip-name">Employee</div><div class="role-chip-desc">My workspace</div></div>
+        <div class="role-chip" onclick="selRole('finance',this)"><div class="role-chip-icon">F</div><div class="role-chip-name">Finance</div><div class="role-chip-desc">Finance desk</div></div>
+      </div>
+      <label class="l-label">Email</label>
+      <input class="l-input" type="email" id="l-email" value="manager@mdfc.rw">
+      <label class="l-label">Password</label>
+      <input class="l-input" type="password" value="••••••••">
+      <button class="l-btn" onclick="doLogin()">Sign in →</button>
+      <div style="text-align:center;margin-top:14px;font-size:11px;color:rgba(255,255,255,.25)">Demo — select any role above then sign in</div>
+    </div>
+    <div class="login-system-panel">
+      <div class="login-system-title">Whole System Structure</div>
+      <div class="pms-tree">
+        <div class="pms-root">PMS</div>
+        <div class="pms-branches">
+          <div class="pms-branch programs">
+            <div class="pms-branch-title">Programs</div>
+            <div class="pms-branch-sub">Project management</div>
+            <ul class="pms-list">
+              <li><b>Add projects</b> from application or proposal work plans.</li>
+              <li><b>Assign tasks</b> to project leads and implementors.</li>
+              <li><b>Track activities</b>, timelines, outputs, remarks, challenges, and comments.</li>
+              <li><b>M&E evidence</b>: data, testimonials, videos, attachments, indicators, and survey results.</li>
+              <li><b>Grants database</b>: grant name, funder, owner, link, progress, and remarks.</li>
+            </ul>
+          </div>
+          <div class="pms-branch finance">
+            <div class="pms-branch-title">Finance</div>
+            <div class="pms-branch-sub">Requisition and budget monitoring</div>
+            <ul class="pms-list">
+              <li><b>Smart requisitions</b> with automatic number, attachments, comments, and status.</li>
+              <li><b>Budget management</b>: preparation, monitoring, forecasting, adjustments, and alerts.</li>
+              <li><b>Approval channel</b>: request preparator, finance verification, executive/board approval.</li>
+              <li><b>Payments and cash advances</b> with vouchers, receipts, and accountability.</li>
+              <li><b>Procurement and audit trail</b> linked to project, donor, budget line, user, history, and documents.</li>
+            </ul>
+          </div>
+          <div class="pms-branch admin">
+            <div class="pms-branch-title">Administration</div>
+            <div class="pms-branch-sub">Daily operations</div>
+            <ul class="pms-list">
+              <li><b>Monthly operations</b>: rent, taxes, subscriptions, amount, responsible person, due date, remarks.</li>
+              <li><b>Asset register</b>: category, item, responsible person, contact, status, and documents.</li>
+              <li><b>Vendors and suppliers</b>: category, name, contracts, timeline, telephone, account number.</li>
+              <li><b>HR and payroll</b>: employee records, contracts, attendance, performance, and training.</li>
+              <li><b>Inventory and travel</b>: office supplies, vehicles, travel records, renewals, and reports.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="pms-note"><b>Golden Rule:</b> every transaction links to a project, donor, budget line, user, approval history, supporting documents, and audit trail.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ════════════════════════════════ -->
+<div id="app">
+  <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-mark"><img src="mdfc-logo.png" alt="Medical Doctors For Choice logo"></div>
+      <div class="sb-logo-text">ProjTrack<small>MDFC · Rwanda</small></div>
+    </div>
+    <div id="nav-wrap"></div>
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av" style="background:var(--accent)">AM</div>
+      <div><div class="sb-uname" id="sb-name">Program Manager</div><div class="sb-urole" id="sb-role">Manager</div></div>
+      <button class="logout-btn" onclick="doLogout()">↩</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="tb-left"><button class="menu-btn" onclick="toggleSidebar()" aria-label="Open navigation">☰</button><div class="tb-title" id="tb-title">Dashboard</div></div>
+      <div class="tb-actions" id="tb-actions"></div>
+    </div>
+    <div class="content" id="app-content"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL ══════════════════════════════ -->
+<div class="overlay" id="overlay" style="display:none" onclick="closeOverlay(event)">
+  <div class="modal" id="modal-box"></div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════
+const COLORS_PROJ=['#8B0000','#1D4ED8','#059669','#7C3AED','#D97706','#0891B2','#BE185D','#374151'];
+let PROJ_COLOR='#8B0000';
+let UPLOAD_NAME='';
+
+const D={
+  tasks:[
+    {id:1,title:'Design activity request form UI',project:1,assign:'Software / IT Intern',priority:'High',status:'Done',due:'Jun 08',program:'Digital Innovation',desc:'Create Figma designs for the new activity request form including all budget fields.'},
+    {id:2,title:'Review SRHR data entry fields',project:2,assign:'Program Manager',priority:'High',status:'In Progress',due:'Jun 12',program:'Research',desc:'Audit all data entry fields in the M&E dashboard for SRHR compliance.'},
+    {id:3,title:'Update provider network list',project:4,assign:'Data Officer',priority:'Medium',status:'In Progress',due:'Jun 14',program:'Provider Network',desc:'Update the database of all SRHR service providers across districts.'},
+    {id:4,title:'Draft advocacy brief',project:1,assign:'Program Manager',priority:'Low',status:'Not Started',due:'Jun 18',program:'Advocacy',desc:'Draft a policy brief for upcoming advocacy campaign.'},
+    {id:5,title:'Set up database API endpoints',project:1,assign:'Software / IT Intern',priority:'High',status:'In Progress',due:'Jun 12',program:'Digital Innovation',desc:'Build REST API endpoints for the activity request and approval modules.'},
+    {id:6,title:'Research SRHR data standards',project:2,assign:'Data Officer',priority:'Medium',status:'Not Started',due:'Jun 20',program:'Research',desc:'Research international SRHR data standards for M&E alignment.'},
+    {id:7,title:'Staff training slide deck',project:3,assign:'M&E Officer',priority:'Medium',status:'Review',due:'Jun 15',program:'Cap. Building',desc:'Prepare training materials for the upcoming capacity building session.'},
+    {id:8,title:'Database schema design',project:1,assign:'Software / IT Intern',priority:'High',status:'Done',due:'Jun 05',program:'Digital Innovation',desc:'Design the full relational database schema for the PMS.'},
+  ],
+  projects:[
+    {id:1,name:'Digital Service Platform',program:'Digital Innovation',projectCode:'PRJ-DIG-001',budgetLine:'Digital systems',activity:'Platform improvement',items:'Hosting, design, database',desc:'A web-based platform for service information, internal tracking, and digital tools for field support teams.',color:'#8B0000',tasks:18,done:14,budget:1200000,spent:980000,status:'Active',doc:'',start:'2026-01-10',end:'2026-09-30'},
+    {id:2,name:'Program Data Dashboard',program:'Research',projectCode:'PRJ-DATA-002',budgetLine:'Monitoring and evaluation',activity:'Dashboard setup',items:'Forms, indicators, reports',desc:'Monitoring and evaluation dashboard connecting data collection to real-time reporting for managers and partners.',color:'#1D4ED8',tasks:12,done:7,budget:850000,spent:520000,status:'Active',doc:'',start:'2026-02-01',end:'2026-08-15'},
+    {id:3,name:'Community Outreach Tool',program:'Digital Innovation',projectCode:'PRJ-OUT-003',budgetLine:'Project activities',activity:'Outreach tracking',items:'Mobile forms, referral logs',desc:'Mobile-friendly tool for tracking outreach visits, referrals, and follow-ups in low-connectivity settings.',color:'#059669',tasks:8,done:2,budget:600000,spent:120000,status:'Planning',doc:'',start:'2026-04-01',end:'2026-12-31'},
+    {id:4,name:'Service Partner Directory',program:'Provider Network',projectCode:'PRJ-NET-004',budgetLine:'Partner coordination',activity:'Directory update',items:'Provider records, verification',desc:'System for managing a service provider directory, tracking partner details, and supporting referrals.',color:'#7C3AED',tasks:6,done:1,budget:400000,spent:80000,status:'Active',doc:'',start:'2026-03-15',end:'2026-10-31'},
+  ],
+  requests:[
+    {id:1,title:'Equipment purchase request',program:'Operations',by:'Administrative Assistant',amount:650000,date:'4 Aug 2025',status:'Submitted',code:'REQ-OPS-001',projectCode:'PRJ-OPS-001',budgetLine:'Organisational costs',activity:'Office equipment support',items:'Computer equipment',details:'Purchasing equipment for an internal support role',docs:'Purchase request, quotation, approval memo',workflow:{prepared:{dept:'Requesting Department',officer:'Administrative Assistant',position:'Administrative Assistant',comments:'Request prepared with basic details and supporting documents.',status:'Ready for Verification'},verified:{dept:'Finance Department',officer:'Finance Officer',position:'Finance Officer',comments:'Please make the supporting documents complete before payment.',recommendations:'Attach signed minutes and contract where needed.',status:'Ready for Executive Approval'},executive:{dept:'Executive Office',officer:'Executive Director',position:'Executive Director',comments:'Awaiting executive decision.',recommendations:'',status:'Pending'},board:{dept:'Board Approval',officer:'Board Chair',position:'Chair of the Board',comments:'Check collaboration terms and return policy for technology purchase.',recommendations:'Confirm warranty and return terms.',status:'Pending'},progress:{dept:'Finance Progress',spent:0,ref:'Pending',paymentDoc:'Not uploaded',variance:0,varianceReason:'',explanation:'Waiting for final approval'}}},
+    {id:2,title:'Partner event coordination',program:'Advocacy',by:'Finance Assistant Intern',amount:195000,date:'5 Aug 2025',status:'Approved',code:'REQ-ACT-002',projectCode:'PRJ-ACT-002',budgetLine:'Project activities',activity:'Partner launch event',items:'Transportation and facilitation fees',details:'Transportation and facilitation support for a coordination team event',docs:'Attendance list, activity budget, payment list',workflow:{prepared:{dept:'Requesting Department',officer:'Finance Assistant Intern',position:'Finance Assistant Intern',comments:'Request entered with event and participant payment details.',status:'Ready for Verification'},verified:{dept:'Finance Department',officer:'Finance Officer',position:'Finance Officer',comments:'Request already initiated in the payment system and contribution source confirmed.',recommendations:'Ready for executive approval.',status:'Ready for Executive Approval'},executive:{dept:'Executive Office',officer:'Executive Director',position:'Executive Director',comments:'Approved for payment processing.',recommendations:'',status:'Approved'},board:{dept:'Board Approval',officer:'Board Chair',position:'Chair of the Board',comments:'Approved under planned activity support.',recommendations:'',status:'Approved'},progress:{dept:'Finance Progress',spent:195000,ref:'PAY-REF-002',paymentDoc:'Facilitation fees payment.pdf',variance:0,varianceReason:'None',explanation:'Payment aligned with approved amount'}}},
+    {id:3,title:'Facility milestone payment',program:'Operations',by:'Finance Assistant Intern',amount:2000000,date:'6 Aug 2025',status:'Paid',code:'REQ-OPS-003',projectCode:'PRJ-OPS-003',budgetLine:'Organisational costs',activity:'Infrastructure milestone',items:'Milestone payment',details:'Payment for an approved organisational infrastructure milestone',docs:'Agreement, transfer confirmation, approval note',workflow:{prepared:{dept:'Requesting Department',officer:'Finance Assistant Intern',position:'Finance Assistant Intern',comments:'Supporting documents will be provided after payment.',status:'Ready for Verification'},verified:{dept:'Finance Department',officer:'Finance Officer',position:'Finance Officer',comments:'Request processed through the transfer system and ready for approval.',recommendations:'Finance to keep transaction summary on file.',status:'Ready for Executive Approval'},executive:{dept:'Executive Office',officer:'Executive Director',position:'Executive Director',comments:'Approved.',recommendations:'',status:'Approved'},board:{dept:'Board Approval',officer:'Board Chair',position:'Chair of the Board',comments:'Approved with instruction to stay aligned with audit requirements.',recommendations:'Keep payment evidence complete.',status:'Approved'},progress:{dept:'Finance Progress',spent:2000000,ref:'TRANSFER-003',paymentDoc:'Transaction summary.pdf',variance:0,varianceReason:'None',explanation:'Payment completed and evidence attached'}}},
+    {id:4,title:'Digital platform setup costs',program:'Digital Innovation',by:'Software / IT Intern',amount:180000,date:'Jun 12',status:'Draft',code:'REQ-DIG-004',projectCode:'PRJ-DIG-004',budgetLine:'Digital systems',activity:'PMS demo hosting and setup',items:'Server, domain, SSL',details:'Server and setup costs for the project management system demo',docs:'Draft budget breakdown',workflow:{prepared:{dept:'Requesting Department',officer:'Software / IT Intern',position:'Software / IT Intern',comments:'Draft request still being completed.',status:'Draft'},verified:{dept:'Finance Department',officer:'Finance Officer',position:'Finance Officer',comments:'Waiting for submission.',recommendations:'',status:'Waiting'},executive:{dept:'Executive Office',officer:'Executive Director',position:'Executive Director',comments:'Waiting for finance verification.',recommendations:'',status:'Waiting'},board:{dept:'Board Approval',officer:'Board Chair',position:'Chair of the Board',comments:'Not required yet.',recommendations:'',status:'Waiting'},progress:{dept:'Finance Progress',spent:0,ref:'Pending',paymentDoc:'Not uploaded',variance:0,varianceReason:'',explanation:'No payment yet'}}},
+  ],
+  team:[
+    {name:'Program Manager',role:'Program Manager',tasks:6,done:5,color:'#8B0000',av:'PM'},
+    {name:'Software / IT Intern',role:'Software / IT Intern',tasks:5,done:4,color:'#1D4ED8',av:'IT'},
+    {name:'Data Officer',role:'Data Analyst',tasks:4,done:3,color:'#D97706',av:'DO'},
+    {name:'Developer',role:'Developer',tasks:7,done:5,color:'#7C3AED',av:'DV'},
+    {name:'M&E Officer',role:'M&E Officer',tasks:4,done:4,color:'#059669',av:'ME'},
+  ],
+  participants:[
+    {no:1,name:'Participant 01',mobile:'078 *** 0001',role:'Medical Student',amount:15000,paid:false},
+    {no:2,name:'Participant 02',mobile:'078 *** 0002',role:'Medical Student',amount:15000,paid:false},
+    {no:3,name:'Participant 03',mobile:'078 *** 0003',role:'Medical Student',amount:15000,paid:false},
+    {no:4,name:'Participant 04',mobile:'078 *** 0004',role:'MDFC Staff',amount:15000,paid:true},
+    {no:5,name:'Participant 05',mobile:'078 *** 0005',role:'MDFC Staff',amount:15000,paid:true},
+    {no:6,name:'Participant 06',mobile:'078 *** 0006',role:'MDFC Staff',amount:15000,paid:false},
+    {no:7,name:'Participant 07',mobile:'078 *** 0007',role:'Photographer',amount:15000,paid:false},
+  ],
+  adminOps:[
+    {name:'Office rent',amount:450000,responsible:'Administrative Assistant',timeline:'25th of each month',remarks:'Monthly operation',method:'Bank transfer'},
+    {name:'Taxes',amount:150000,responsible:'Finance Officer',timeline:'15th of each month',remarks:'Statutory filing',method:'Bank transfer'},
+    {name:'Monthly subscriptions',amount:85000,responsible:'Administration',timeline:'Monthly renewal',remarks:'Internet, tools, and service subscriptions',method:'Card / transfer'},
+  ],
+  assets:[
+    {category:'Electronic devices',name:'Laptops and accessories',responsible:'Administration',contact:'admin@mdfc.rw',status:'Assigned'},
+    {category:'Office equipment',name:'Printer and meeting equipment',responsible:'Administration',contact:'admin@mdfc.rw',status:'In use'},
+  ],
+  vendors:[
+    {category:'Digital service',name:'SmartClick',docs:'Contract attached',timeline:'Contract period',tel:'078 *** 0101',account:'ACC-001',type:'Recurring vendor'},
+    {category:'Office supplier',name:'Stationery supplier',docs:'Quotation and invoice',timeline:'On demand',tel:'078 *** 0202',account:'ACC-002',type:'Occasional vendor'},
+  ],
+  grants:[
+    {name:'Digital Health Support Grant',funder:'Partner funder',who:'Programs + M&E',link:'Workplan link',progress:'Inputs and outputs tracked',remarks:'Narrative report pending'},
+    {name:'Community Outreach Grant',funder:'Institutional donor',who:'Project Lead',link:'Dashboard link',progress:'Activities underway',remarks:'Survey results attached'},
+    {name:'Service Access Grant',funder:'Health partner',who:'Finance + Programs',link:'Budget link',progress:'Budget monitoring active',remarks:'No major variance'},
+  ],
+  hr:[
+    {employee:'Employee 01',role:'Project Lead',department:'Programs',contract:'Active',payroll:'Monthly',status:'On payroll',remarks:'Timesheet submitted'},
+    {employee:'Employee 02',role:'Administrative Assistant',department:'Administration',contract:'Active',payroll:'Monthly',status:'On payroll',remarks:'Handles monthly operations'},
+    {employee:'Employee 03',role:'Finance Officer',department:'Finance',contract:'Active',payroll:'Monthly',status:'On payroll',remarks:'Payment verification lead'},
+    {employee:'Intern 01',role:'Software / IT Intern',department:'Digital Innovation',contract:'Internship',payroll:'Allowance / N/A',status:'Active intern',remarks:'PMS implementation support'},
+  ],
+  commentsLoop:[
+    {from:'Finance Department Lead',to:'Request Preparator',stage:'Verification alert',comment:'Attach missing supporting document before approval.',status:'Addressed'},
+    {from:'Executive Director',to:'Finance Department Lead',stage:'Approval alert',comment:'Approved. Confirm payment does not exceed approved activity budget.',status:'Resolved'},
+    {from:'Board Chair',to:'Executive Director',stage:'Governance comment',comment:'Keep procurement and return policy evidence on file.',status:'Open'},
+    {from:'Request Preparator',to:'Finance Department Lead',stage:'Addressed comments',comment:'Signed minutes and quotation have been uploaded.',status:'Ready for review'},
+  ],
+  evidence:[
+    {project:'Community Outreach Tool',activity:'Training session',data:'Attendance and participant list',testimonials:'2 testimonial notes',videos:'Short activity video',documentary:'Photos and field report',survey:'Pre/post survey results',status:'Uploaded'},
+    {project:'Program Data Dashboard',activity:'M&E review',data:'Indicator dataset',testimonials:'Program feedback notes',videos:'N/A',documentary:'Narrative report draft',survey:'Validation checklist',status:'Review'},
+    {project:'Digital Service Platform',activity:'PMS prototype',data:'User testing notes',testimonials:'Staff feedback',videos:'Demo walkthrough',documentary:'System screenshots',survey:'Usability survey',status:'Uploaded'},
+  ],
+  budgets:[
+    {project:'Digital Service Platform',donor:'Digital health donor',period:'Jan-Sep 2026',category:'Technology',line:'Digital systems',approved:1200000,actual:980000,remaining:220000,forecast:1120000,adjustment:'No adjustment',alert:'Within budget'},
+    {project:'Program Data Dashboard',donor:'Research partner',period:'Feb-Aug 2026',category:'M&E',line:'Monitoring and evaluation',approved:850000,actual:520000,remaining:330000,forecast:760000,adjustment:'Reforecast field data costs',alert:'Watch forecast'},
+    {project:'Community Outreach Tool',donor:'Institutional donor',period:'Apr-Dec 2026',category:'Activities',line:'Project activities',approved:600000,actual:120000,remaining:480000,forecast:570000,adjustment:'Pending revision',alert:'Healthy'},
+  ],
+  suppliers:[
+    {name:'Approved IT Supplier',category:'IT',contact:'Operations Contact',phone:'078 *** 0301',email:'supplier@example.org',address:'Kigali',start:'2026-01-01',end:'2026-12-31',status:'Active',contract:'IT contract.pdf',quotes:'Laptop quotation.pdf'},
+    {name:'Catering Partner',category:'Catering',contact:'Events Contact',phone:'078 *** 0302',email:'catering@example.org',address:'Kigali',start:'2026-03-01',end:'2026-09-30',status:'Renewal due',contract:'Catering agreement.pdf',quotes:'Price list.pdf'},
+    {name:'Transport Provider',category:'Transport',contact:'Logistics Contact',phone:'078 *** 0303',email:'transport@example.org',address:'Kigali',start:'2026-02-15',end:'2027-02-14',status:'Active',contract:'Transport contract.pdf',quotes:'Route rates.pdf'},
+  ],
+  cashAdvances:[
+    {ref:'ADV-2026-001',staff:'Program Officer',project:'Community Outreach Tool',donor:'Institutional donor',budgetLine:'Project activities',amount:250000,issued:'10 Aug 2026',due:'17 Aug 2026',status:'Accountability pending',docs:'Advance request, concept note'},
+    {ref:'ADV-2026-002',staff:'Finance Assistant',project:'Program Data Dashboard',donor:'Research partner',budgetLine:'Monitoring and evaluation',amount:120000,issued:'2 Aug 2026',due:'9 Aug 2026',status:'Cleared',docs:'Receipts, activity report'},
+  ],
+  inventory:[
+    {item:'Laptop',category:'Electronic device',quantity:5,assigned:'Programs team',location:'Office',status:'In use',docs:'Asset handover form'},
+    {item:'Projector',category:'Office equipment',quantity:1,assigned:'Administration',location:'Meeting room',status:'Available',docs:'Purchase receipt'},
+    {item:'Stationery pack',category:'Office supplies',quantity:40,assigned:'General store',location:'Storage',status:'Low stock',docs:'Stock card'},
+  ],
+  travel:[
+    {vehicle:'Vehicle 01',purpose:'Field activity',traveler:'Project team',destination:'District field site',date:'14 Aug 2026',status:'Scheduled',docs:'Travel request'},
+    {vehicle:'Hired transport',purpose:'Training logistics',traveler:'Training team',destination:'Partner venue',date:'18 Aug 2026',status:'Pending approval',docs:'Quotation, route plan'},
+  ],
+  audit:[
+    {time:'5 Aug 2026 09:10',user:'Administrative Assistant',action:'Created requisition',record:'REQ-OPS-001',project:'Office operations',donor:'Core funds',budgetLine:'Organisational costs',docs:'Purchase request, quotation',status:'Archived'},
+    {time:'5 Aug 2026 09:40',user:'Finance Officer',action:'Verified budget availability',record:'REQ-ACT-002',project:'Partner event coordination',donor:'Health partner',budgetLine:'Project activities',docs:'Attendance list, activity budget',status:'Logged'},
+    {time:'5 Aug 2026 10:05',user:'Executive Director',action:'Approved request',record:'REQ-ACT-002',project:'Partner event coordination',donor:'Health partner',budgetLine:'Project activities',docs:'Approval note',status:'Logged'},
+    {time:'5 Aug 2026 10:30',user:'Finance Officer',action:'Recorded payment evidence',record:'PAY-REF-002',project:'Partner event coordination',donor:'Health partner',budgetLine:'Project activities',docs:'Payment voucher, receipt',status:'Archived'},
+  ],
+  nTask:9,nProj:5,nReq:5,kFilter:'all',rFilter:'all'
+};
+
+const RWF=n=>'RWF '+(n||0).toLocaleString();
+function requestDateLabel(value){
+  if(!value)return new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const d=new Date(value+'T00:00:00');
+  return Number.isNaN(d.getTime())?value:d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+const BC={High:'b-red',Medium:'b-amber',Low:'b-green'};
+const SC={'Not Started':'b-gray','In Progress':'b-blue','Done':'b-green','Delayed':'b-red','Review':'b-amber'};
+const RC={Draft:'b-gray',Submitted:'b-blue',Approved:'b-green',Paid:'b-green',Archived:'b-gray'};
+const AVC={'Program Manager':'#8B0000','Software / IT Intern':'#1D4ED8','Data Officer':'#D97706','Developer':'#7C3AED','M&E Officer':'#059669','(Unassigned)':'#94A3B8'};
+const REQ_STAGES=[
+  {key:'prepared',title:'Request Preparator / Initiator',dept:'Requesting department',fields:['Request','Supporting docs','Comments','Status']},
+  {key:'verified',title:'Finance Department Lead',dept:'Verification and budget monitoring',fields:['Verified request','Verification alert','Comments','Status']},
+  {key:'executive',title:'Executive Director',dept:'Executive approval',fields:['Approval alert','Comments','Recommendations','Status']},
+  {key:'board',title:'Chair of Board',dept:'Board / governance approval',fields:['Approval alert','Comments','Recommendations','Status']},
+  {key:'progress',title:'Permission & Payment',dept:'Finance execution',fields:['Permission grant','Supporting docs','Variance','10% rule']},
+];
+const STAGE_COLORS={prepared:'#1D9E75',verified:'#D97706',executive:'#8B0000',board:'#1D4ED8',progress:'#059669'};
+const ICONS={
+  grid:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+  folder:'<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+  users:'<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
+  file:'<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  book:'<svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  bar:'<svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+  dollar:'<svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+};
+
+const NAVS={
+  director:[
+    {id:'d-dash',l:'Director Dashboard',i:'grid'},
+    {id:'d-approvals',l:'Executive Approvals',i:'file'},
+    {id:'d-projects',l:'Programs',i:'folder'},
+    {id:'d-finance',l:'Finance',i:'dollar'},
+    {id:'d-admin',l:'Administration',i:'book'},
+  ],
+  manager:[
+    {id:'m-dash',l:'Dashboard',i:'grid'},
+    {id:'m-proj',l:'Programs',i:'folder'},
+    {id:'m-team',l:'Team Overview',i:'users'},
+    {id:'m-tasks',l:'Task Board',i:'check'},
+    {id:'m-req',l:'Activity Requests',i:'file'},
+    {id:'m-admin',l:'Administration',i:'book'},
+    {id:'m-evidence',l:'M&E Evidence',i:'file'},
+    {id:'m-grants',l:'Grants Database',i:'bar'},
+    {id:'m-log',l:'Work Logs',i:'book'},
+  ],
+  staff:[
+    {id:'s-dash',l:'My Dashboard',i:'grid'},
+    {id:'s-tasks',l:'My Tasks',i:'check'},
+    {id:'s-log',l:'My Work Log',i:'book'},
+    {id:'s-evidence',l:'M&E Evidence',i:'file'},
+    {id:'s-req',l:'Submit Request',i:'file'},
+  ],
+  finance:[
+    {id:'f-dash',l:'Finance',i:'grid'},
+    {id:'f-req',l:'Review Requests',i:'file'},
+    {id:'f-pay',l:'Payments',i:'dollar'},
+    {id:'f-bud',l:'Budget, Procurement & Audit',i:'bar'},
+  ],
+};
+
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
+let ROLE='manager';
+const ROLES_INFO={
+  director:{name:'Executive Director',av:'ED',color:'#5C0000',label:'Director / Executive Approval'},
+  manager:{name:'Program Manager',av:'PM',color:'#8B0000',label:'Manager / Supervisor'},
+  staff:{name:'Software / IT Intern',av:'IT',color:'#1D4ED8',label:'Employee Workspace'},
+  finance:{name:'Finance Officer',av:'FO',color:'#D97706',label:'Finance Officer'},
+};
+
+function selRole(r,el){
+  ROLE=r;
+  document.querySelectorAll('.role-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  const em={director:'director@mdfc.rw',manager:'manager@mdfc.rw',staff:'employee@mdfc.rw',finance:'finance@mdfc.rw'};
+  document.getElementById('l-email').value=em[r];
+}
+function doLogin(){
+  const ro=ROLES_INFO[ROLE];
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('sb-av').textContent=ro.av;
+  document.getElementById('sb-av').style.background=ro.color;
+  document.getElementById('sb-name').textContent=ro.name;
+  document.getElementById('sb-role').textContent=ro.label;
+  buildNav();
+  go(NAVS[ROLE][0].id);
+}
+function doLogout(){
+  closeSidebar();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+function toggleSidebar(){
+  document.getElementById('sidebar')?.classList.toggle('open');
+  document.getElementById('sidebar-backdrop')?.classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-backdrop')?.classList.remove('show');
+}
+function buildNav(){
+  const navs=NAVS[ROLE];
+  let h='';
+  navs.forEach(n=>{
+    const badge=(n.id==='m-req'||n.id==='f-req')&&D.requests.filter(r=>r.status==='Submitted').length>0
+      ?`<span class="nav-badge">${D.requests.filter(r=>r.status==='Submitted').length}</span>`:'';
+    h+=`<div class="nav-item" id="nav-${n.id}" onclick="go('${n.id}')">${ICONS[n.i]||''}${n.l}${badge}</div>`;
+  });
+  document.getElementById('nav-wrap').innerHTML=h;
+}
+function go(id){
+  closeSidebar();
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const el=document.getElementById('nav-'+id);
+  if(el)el.classList.add('active');
+  const nav=NAVS[ROLE].find(n=>n.id===id);
+  document.getElementById('tb-title').textContent=nav?.l||id;
+  const views={
+    'd-dash':vDDash,'d-approvals':vDApprovals,'d-projects':vDProjects,'d-finance':vDFinance,
+    'd-admin':vAdminOps,'d-grants':vGrants,
+    'm-dash':vMDash,'m-proj':vMProj,'m-team':vMTeam,'m-tasks':vMTasks,
+    'm-req':vReqs,'m-log':vMLogs,
+    'm-admin':vAdminOps,'m-grants':vGrants,'m-evidence':vMEvidence,
+    's-dash':vSDash,'s-tasks':vSTasks,'s-log':vSLog,'s-evidence':vMEvidence,'s-req':vSReq,
+    'f-dash':vFDash,'f-req':vFReq,'f-pay':vFPay,'f-bud':vFBud,
+  };
+  const fn=views[id];
+  if(fn){
+    const {html,btns}=fn();
+    document.getElementById('app-content').innerHTML=`<div class="view active">${html}</div>`;
+    document.getElementById('tb-actions').innerHTML=btns||'';
+    bindDemoInteractions();
+  }
+}
+
+function defaultWorkflow(r){
+  return {
+    prepared:{dept:'Requesting Department',officer:r.by||'Program Staff',position:r.by||'Program Staff',comments:'Request created and supporting details entered.',status:'Draft'},
+    verified:{dept:'Finance Department',officer:'Finance Officer',position:'Finance Officer',comments:'Waiting for finance verification.',recommendations:'',status:'Waiting'},
+    executive:{dept:'Executive Office',officer:'Executive Director',position:'Executive Director',comments:'Waiting for verification.',recommendations:'',status:'Waiting'},
+    board:{dept:'Board Approval',officer:'Board Chair',position:'Chair of the Board',comments:'Waiting for executive review.',recommendations:'',status:'Waiting'},
+    progress:{dept:'Finance Execution',spent:0,ref:'Pending',paymentDoc:'Not uploaded',variance:0,varianceReason:'',explanation:'No payment yet',permissionGrant:'Pending finance permission',varianceLimit:'Do not exceed 10% of the planned activity amount'}
+  };
+}
+function syncRequestWorkflow(r){
+  if(!r.workflow)r.workflow=defaultWorkflow(r);
+  const flow=r.workflow;
+  const map={
+    Draft:{prepared:'Draft',verified:'Waiting',executive:'Waiting',board:'Waiting',progress:'Not started'},
+    Submitted:{prepared:'Ready for Verification',verified:'Ready for Executive Approval',executive:'Pending',board:'Pending',progress:'Pending'},
+    Approved:{prepared:'Ready for Verification',verified:'Ready for Executive Approval',executive:'Approved',board:'Approved',progress:'Pending Payment'},
+    Paid:{prepared:'Ready for Verification',verified:'Ready for Executive Approval',executive:'Approved',board:'Approved',progress:'Paid'}
+  }[r.status]||{};
+  ['prepared','verified','executive','board'].forEach(k=>{flow[k]={...defaultWorkflow(r)[k],...(flow[k]||{}),status:map[k]||flow[k]?.status||'Waiting'};});
+  flow.progress={...defaultWorkflow(r).progress,...(flow.progress||{}),status:map.progress||flow.progress?.status||'Pending'};
+  if(r.status==='Paid'&&!flow.progress.spent)flow.progress.spent=r.amount;
+  return flow;
+}
+function wfBadge(status){
+  const s=(status||'').toLowerCase();
+  if(s.includes('approved')||s.includes('paid'))return'b-green';
+  if(s.includes('ready'))return'b-blue';
+  if(s.includes('pending'))return'b-amber';
+  if(s.includes('draft')||s.includes('waiting'))return'b-gray';
+  return'b-gray';
+}
+function renderDeptMap(){
+  return`<div class="dept-map">${REQ_STAGES.map(s=>`<div class="dept-card">
+    <div class="dept-title">${s.title}</div>
+    <div class="dept-sub">${s.dept}</div>
+    <div class="dept-fields">${s.fields.map(f=>`<span class="mini-chip">${f}</span>`).join('')}</div>
+  </div>`).join('')}</div>`;
+}
+function projectFromRequest(r){
+  return D.projects.find(p=>p.projectCode===r.projectCode)||D.projects.find(p=>p.name===r.projectCode)||D.projects.find(p=>(r.activity||'').includes(p.name))||null;
+}
+function donorFromRecord(r){
+  const project=projectFromRequest(r);
+  const b=D.budgets.find(x=>x.project===project?.name)||D.budgets.find(x=>x.line===r.budgetLine)||D.budgets.find(x=>x.category===r.program);
+  return r.donor||b?.donor||'Core / project donor';
+}
+function approvalHistory(r){
+  const flow=syncRequestWorkflow(r);
+  return ['prepared','verified','executive','board','progress'].map(k=>flow[k]?.status||'Waiting').join(' -> ');
+}
+function renderRequestDetails(r){
+  return`<div class="req-detail-grid">
+    <div class="req-detail-cell"><div class="req-detail-label">Details</div><div class="req-detail-val">${r.details||r.title}</div></div>
+    <div class="req-detail-cell"><div class="req-detail-label">Project code</div><div class="req-detail-val">${r.projectCode||r.code}</div></div>
+    <div class="req-detail-cell"><div class="req-detail-label">Donor / funder</div><div class="req-detail-val">${donorFromRecord(r)}</div></div>
+    <div class="req-detail-cell"><div class="req-detail-label">Budget line</div><div class="req-detail-val">${r.budgetLine||r.program}</div></div>
+    <div class="req-detail-cell"><div class="req-detail-label">Activity</div><div class="req-detail-val">${r.activity||r.title}</div></div>
+    <div class="req-detail-cell"><div class="req-detail-label">Items</div><div class="req-detail-val">${r.items||'Activity costs'}</div></div>
+    <div class="req-detail-cell"><div class="req-detail-label">Requester / user</div><div class="req-detail-val">${r.by||ROLES_INFO[ROLE].name}</div></div>
+    <div class="req-detail-cell"><div class="req-detail-label">Documents</div><div class="req-detail-val">${r.docs||'Supporting documents'}</div></div>
+  </div>`;
+}
+function renderGoldenRule(r){
+  const events=D.audit.filter(a=>a.record===r.code||a.record===r.workflow?.progress?.ref||a.project===r.title||a.budgetLine===r.budgetLine);
+  const latest=events[0]?.status||'Logged on request';
+  return`<div class="golden-grid">
+    <div class="golden-cell"><div class="golden-label">Project</div><div class="golden-val">${projectFromRequest(r)?.name||r.projectCode||r.title}</div></div>
+    <div class="golden-cell"><div class="golden-label">Donor</div><div class="golden-val">${donorFromRecord(r)}</div></div>
+    <div class="golden-cell"><div class="golden-label">Budget Line</div><div class="golden-val">${r.budgetLine||'Budget line pending'}</div></div>
+    <div class="golden-cell"><div class="golden-label">User</div><div class="golden-val">${r.by||ROLES_INFO[ROLE].name}</div></div>
+    <div class="golden-cell"><div class="golden-label">Approval History</div><div class="golden-val">${approvalHistory(r)}</div></div>
+    <div class="golden-cell"><div class="golden-label">Supporting Docs</div><div class="golden-val">${r.docs||'Required before payment'}</div></div>
+    <div class="golden-cell"><div class="golden-label">Audit Trail</div><div class="golden-val">${events.length||1} event(s) - ${latest}</div></div>
+  </div>`;
+}
+function renderWorkflow(r){
+  const flow=syncRequestWorkflow(r);
+  return`<div class="workflow-grid">${REQ_STAGES.map(s=>{
+    const x=flow[s.key]||{};
+    let body;
+    if(s.key==='progress'){
+      body=[{k:'Permission grant',v:x.permissionGrant||'Notification to Finance pending'},{k:'Supporting documents',v:x.paymentDoc||'Not uploaded'},{k:'Spent amount',v:RWF(x.spent||0)},{k:'Reference no.',v:x.ref||'Pending'},{k:'Variance',v:RWF(x.variance||0)},{k:'10% rule',v:x.varianceLimit||'Do not exceed 10% of planned activity amount'},{k:'Variance explanation',v:x.explanation||'Waiting for approval'}];
+    }else{
+      body=[{k:'Names',v:x.officer||'Unassigned'},{k:'Position',v:x.position||'Unassigned'},{k:'Comments',v:x.comments||'No comment yet'}];
+      if(s.key!=='prepared')body.push({k:'Recommendations',v:x.recommendations||'--'});
+      body.push({k:'Status',v:`<span class="badge ${wfBadge(x.status)}">${x.status||'Waiting'}</span>`});
+    }
+    return`<div class="workflow-stage" style="border-top:4px solid ${STAGE_COLORS[s.key]}">
+      <div class="workflow-top"><div class="workflow-label">${s.title}</div><div class="workflow-dept">${x.dept||s.dept}</div></div>
+      <div class="workflow-body">${body.map(row=>`<div class="wf-row"><div class="wf-k">${row.k}</div><div class="wf-v">${row.v}</div></div>`).join('')}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderRequestComments(r){
+  const flow=syncRequestWorkflow(r);
+  const rows=[
+    {from:'Finance Department Lead',stage:'Verification comment',comment:flow.verified?.comments||'Waiting for finance verification.',status:flow.verified?.status||'Waiting'},
+    {from:'Executive Director / Board',stage:'Approval comment',comment:flow.executive?.comments||flow.board?.comments||'Waiting for approval decision.',status:flow.executive?.status||'Waiting'},
+    {from:'Request Preparator',stage:'Addressed comments',comment:r.status==='Draft'?'Request still being prepared.':'Supporting documents and corrections are tracked in this request.',status:r.status==='Paid'?'Resolved':'Open'}
+  ];
+  return`<div class="panel" style="box-shadow:none;border:1px solid var(--gray-border);margin:10px 0">
+    <div class="panel-hdr">Request Comments & Alerts</div>
+    <table class="tbl"><thead><tr><th>From</th><th>Stage</th><th>Comment</th><th>Status</th></tr></thead>
+    <tbody>${rows.map(c=>`<tr><td class="bold">${c.from}</td><td class="muted">${c.stage}</td><td class="muted">${c.comment}</td><td><span class="badge ${wfBadge(c.status)}">${c.status}</span></td></tr>`).join('')}</tbody></table>
+  </div>`;
+}
+
+function renderFinanceChannel(){
+  return`<div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Finance Channel & Approval Alerts</div>
+    <div style="padding:14px">
+      <div class="workflow-grid">
+        ${[
+          {t:'Request preparator / initiator',s:'Creates request and uploads supporting documents',c:'#1D9E75'},
+          {t:'Finance department lead',s:'Verifies request, checks budget, sends verification alert',c:'#D97706'},
+          {t:'Executive Director / Board Chair',s:'Reviews comments and gives approval decision',c:'#8B0000'},
+          {t:'Permission grant to Finance',s:'Finance receives notification to execute approved amount',c:'#1D4ED8'},
+          {t:'Payment execution',s:'Payment evidence, variance reason, and supporting documents are stored',c:'#059669'},
+        ].map(x=>`<div class="workflow-stage" style="border-top:4px solid ${x.c}">
+          <div class="workflow-top"><div class="workflow-label">${x.t}</div><div class="workflow-dept">${x.s}</div></div>
+          <div class="workflow-body"><div class="wf-row"><div class="wf-k">Rule</div><div class="wf-v">Do not exceed 10% of planned activity amount without explanation.</div></div></div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function deptGo(kind){
+  const routes={
+    programs:{director:'d-projects',manager:'m-proj',staff:'s-tasks',finance:null},
+    finance:{director:'d-finance',manager:'m-req',staff:'s-req',finance:'f-bud'},
+    admin:{director:'d-admin',manager:'m-admin',staff:null,finance:null}
+  };
+  const target=routes[kind]?.[ROLE];
+  if(target)go(target);
+  else toast('This branch is visible for structure; access depends on the user role.');
+}
+function renderSystemStructure(){
+  return`<div class="panel" style="margin-bottom:16px">
+    <div class="panel-hdr">PMS Structure</div>
+    <div class="pms-tree">
+      <div class="pms-root">PMS</div>
+      <div class="pms-branches">
+        <div class="pms-branch programs" onclick="deptGo('programs')" title="Open Programs branch">
+          <div class="pms-branch-title">Programs</div>
+          <div class="pms-branch-sub">Project management</div>
+          <ul class="pms-list">
+            <li><b>Add projects</b> from application or proposal work plans.</li>
+            <li><b>Assign tasks</b> to project leads and implementors.</li>
+            <li><b>Track activities</b>, timelines, outputs, remarks, challenges, and comments.</li>
+            <li><b>M&E evidence</b>: data, testimonials, videos, attachments, indicators, and survey results.</li>
+            <li><b>Grants database</b>: grant name, funder, owner, link, progress, and remarks.</li>
+          </ul>
+        </div>
+        <div class="pms-branch finance" onclick="deptGo('finance')" title="Open Finance branch">
+          <div class="pms-branch-title">Finance</div>
+          <div class="pms-branch-sub">Requisition and budget monitoring</div>
+          <ul class="pms-list">
+            <li><b>Smart requisitions</b> with automatic number, attachments, comments, and status.</li>
+            <li><b>Budget management</b>: preparation, monitoring, forecasting, adjustments, and alerts.</li>
+            <li><b>Approval channel</b>: request preparator, finance verification, executive/board approval.</li>
+            <li><b>Payments and cash advances</b> with payee, method, vouchers, receipts, and accountability.</li>
+            <li><b>Procurement and audit trail</b> linked to project, donor, budget line, user, history, and documents.</li>
+          </ul>
+        </div>
+        <div class="pms-branch admin" onclick="deptGo('admin')" title="Open Administration branch">
+          <div class="pms-branch-title">Administration</div>
+          <div class="pms-branch-sub">Daily operations</div>
+          <ul class="pms-list">
+            <li><b>Monthly operations</b>: rent, taxes, subscriptions, amount, responsible person, due date, remarks.</li>
+            <li><b>Asset register</b>: category, item, responsible person, contact, status, and supporting documents.</li>
+            <li><b>Vendors and suppliers</b>: category, name, contracts, timeline, telephone, account number.</li>
+            <li><b>HR and payroll</b>: employee records, contracts, attendance, performance, and training.</li>
+            <li><b>Inventory and travel</b>: office supplies, vehicles, travel records, renewals, and reports.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="pms-note"><b>Golden Rule:</b> every transaction links to a project, donor, budget line, user, approval history, supporting documents, and audit trail.</div>
+    </div>
+  </div>`;
+}
+
+function vProcurement(){
+  const active=D.suppliers.filter(s=>s.status==='Active').length;
+  const renewal=D.suppliers.filter(s=>s.status.toLowerCase().includes('renewal')).length;
+  return{btns:`<button class="btn gp" onclick="toast('Supplier form opened!')">+ Supplier</button><button class="btn ghost-maroon" onclick="toast('Purchase order created from approved request!')">+ Purchase Order</button><button class="btn" onclick="toast('Supplier report exported!')">Export Supplier Report</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Procurement & Supplier Management</div></div>
+  <div class="stat-grid">
+    <div class="stat-card sc-blue"><div class="stat-val">${D.suppliers.length}</div><div class="stat-label">Suppliers</div><div class="stat-sub">supplier database</div></div>
+    <div class="stat-card sc-green"><div class="stat-val">${active}</div><div class="stat-label">Active Contracts</div><div class="stat-sub">ready for procurement</div></div>
+    <div class="stat-card sc-amber"><div class="stat-val">${renewal}</div><div class="stat-label">Renewal Due</div><div class="stat-sub">contract reminders</div></div>
+    <div class="stat-card sc-maroon"><div class="stat-val">${D.suppliers.filter(s=>s.quotes).length}</div><div class="stat-label">Quotation Files</div><div class="stat-sub">price lists attached</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Procurement Flow</div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;font-size:12px;color:var(--text-2)">
+      ${[
+        ['Approved request','Requisition must pass budget and approval checks.'],
+        ['Supplier / quotation','Select supplier, contract, quotation, or price list.'],
+        ['Procurement review','Check contract status, category, and supporting documents.'],
+        ['Purchase order','Issue order or service instruction after approval.'],
+        ['Delivery and finance','Goods/services delivered; Finance records the expense.'],
+      ].map((x,i)=>`<div style="padding:12px;border-radius:var(--r-sm);background:${i%2?'#FFF8F8':'#F0FDF4'};border:1px solid ${i%2?'#F5C6C6':'#86EFAC'}"><b style="color:${i%2?'var(--maroon)':'#047857'}">${i+1}. ${x[0]}</b><br>${x[1]}</div>`).join('')}
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">Supplier / Contract Database</div>
+    <table class="tbl"><thead><tr><th>Supplier</th><th>Category</th><th>Contact person</th><th>Phone / Email</th><th>Address</th><th>Contract period</th><th>Status</th><th>Contract</th><th>Quotations / price list</th></tr></thead>
+    <tbody>${D.suppliers.map(s=>`<tr><td class="bold">${s.name}</td><td>${s.category}</td><td class="muted">${s.contact}</td><td class="muted">${s.phone}<br>${s.email}</td><td class="muted">${s.address}</td><td class="muted">${s.start} -> ${s.end}</td><td><span class="badge ${s.status==='Active'?'b-green':'b-amber'}">${s.status}</span></td><td class="muted">${s.contract}</td><td class="muted">${s.quotes}</td></tr>`).join('')}</tbody></table>
+  </div>`};
+}
+
+function vCashAdvances(){
+  const pending=D.cashAdvances.filter(a=>a.status.toLowerCase().includes('pending')).length;
+  const total=D.cashAdvances.reduce((sum,a)=>sum+a.amount,0);
+  return{btns:`<button class="btn gp" onclick="toast('Cash advance form opened!')">+ Cash Advance</button><button class="btn ghost-maroon" onclick="toast('Accountability upload opened!')">Upload Accountability</button><button class="btn" onclick="toast('Cash advance register exported!')">Export Register</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Cash Advances & Accountability</div></div>
+  <div class="stat-grid">
+    <div class="stat-card sc-maroon"><div class="stat-val">${D.cashAdvances.length}</div><div class="stat-label">Advances</div><div class="stat-sub">open register</div></div>
+    <div class="stat-card sc-amber"><div class="stat-val">${pending}</div><div class="stat-label">Pending Accountability</div><div class="stat-sub">receipts required</div></div>
+    <div class="stat-card sc-green"><div class="stat-val" style="font-size:20px">${RWF(total)}</div><div class="stat-label">Advance Value</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val">4</div><div class="stat-label">Required Links</div><div class="stat-sub">project, donor, budget, docs</div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">Advance Register</div>
+    <table class="tbl"><thead><tr><th>Reference</th><th>Staff / title</th><th>Project</th><th>Donor</th><th>Budget line</th><th>Amount</th><th>Issued</th><th>Due</th><th>Status</th><th>Supporting docs</th></tr></thead>
+    <tbody>${D.cashAdvances.map(a=>`<tr><td class="bold">${a.ref}</td><td>${a.staff}</td><td class="muted">${a.project}</td><td class="muted">${a.donor}</td><td class="muted">${a.budgetLine}</td><td style="font-weight:700;color:var(--maroon)">${RWF(a.amount)}</td><td class="muted">${a.issued}</td><td class="muted">${a.due}</td><td><span class="badge ${a.status==='Cleared'?'b-green':'b-amber'}">${a.status}</span></td><td class="muted">${a.docs}</td></tr>`).join('')}</tbody></table>
+  </div>
+  <div class="grid3" style="margin-top:14px">
+    ${[
+      {t:'Receipts',d:'Upload invoices, receipts, or payment evidence before clearance.',c:'#8B0000'},
+      {t:'Activity report',d:'Attach narrative, attendance, photos, or field notes for accountability.',c:'#1D4ED8'},
+      {t:'Finance clearance',d:'Finance checks unused funds, reconciles balances, and closes the advance.',c:'#059669'},
+    ].map(x=>`<div class="panel"><div class="panel-hdr" style="background:${x.c}">${x.t}</div><div style="padding:14px;font-size:12px;color:var(--text-2);line-height:1.6">${x.d}</div></div>`).join('')}
+  </div>`};
+}
+
+function vAuditTrail(){
+  return{btns:`<button class="btn" onclick="toast('Audit archive exported!')">Export Audit Trail</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Audit Trail & Archive</div></div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Golden Rule for Every Transaction</div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;font-size:11px;color:var(--text-2)">
+      ${['Project','Donor','Budget Line','User','Approval History','Supporting Documents','Audit Trail'].map(x=>`<div style="padding:10px;border-radius:var(--r-sm);background:#F8FAFC;border:1px solid var(--gray-border);font-weight:800;color:var(--text);text-align:center">${x}</div>`).join('')}
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">System Audit Log</div>
+    <table class="tbl"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Record</th><th>Project</th><th>Donor</th><th>Budget line</th><th>Documents</th><th>Status</th></tr></thead>
+    <tbody>${D.audit.map(a=>`<tr><td class="muted">${a.time}</td><td class="bold">${a.user}</td><td>${a.action}</td><td class="muted">${a.record}</td><td class="muted">${a.project}</td><td class="muted">${a.donor}</td><td class="muted">${a.budgetLine}</td><td class="muted">${a.docs}</td><td><span class="badge ${a.status==='Archived'?'b-gray':'b-green'}">${a.status}</span></td></tr>`).join('')}</tbody></table>
+  </div>`};
+}
+
+function vAdminOps(){
+  return{btns:`<button class="btn gp" onclick="showModal('addAdminOp')">+ Create Admin Operation</button><button class="btn ghost-maroon" onclick="toast('Vendor form opened!')">+ Vendor</button><button class="btn" onclick="toast('Employee record form opened!')">+ Employee</button><button class="btn" onclick="toast('Administration report exported!')">Export</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Administration</div></div>
+  <div class="stat-grid">
+    <div class="stat-card sc-green"><div class="stat-val">${D.adminOps.length}</div><div class="stat-label">Monthly Operations</div><div class="stat-sub">rent, taxes, subscriptions</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val">${D.assets.length}</div><div class="stat-label">Assets</div><div class="stat-sub">equipment register</div></div>
+    <div class="stat-card sc-amber"><div class="stat-val">${D.vendors.length}</div><div class="stat-label">Vendors</div><div class="stat-sub">suppliers and contracts</div></div>
+    <div class="stat-card sc-maroon"><div class="stat-val">${D.hr.length}</div><div class="stat-label">HR / Payroll</div><div class="stat-sub">staff and interns</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Administration to Finance Flow</div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;font-size:12px;color:var(--text-2)">
+      <div style="padding:12px;border-radius:var(--r-sm);background:#F0FDF4;border:1px solid #86EFAC"><b style="color:#047857">1. Create Admin Operation</b><br>Record rent, taxes, subscriptions, vendors, payroll, or daily operations.</div>
+      <div style="padding:12px;border-radius:var(--r-sm);background:#FFF8F8;border:1px solid #F5C6C6"><b style="color:var(--maroon)">2. Send to Finance Request</b><br>The operation becomes a requisition with amount, responsible person, due date, and remarks.</div>
+      <div style="padding:12px;border-radius:var(--r-sm);background:#EFF6FF;border:1px solid #93C5FD"><b style="color:#1D4ED8">3. Approval and Payment</b><br>Finance verifies, Director approves where needed, and payment evidence is stored.</div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr">Monthly Operations</div>
+      <table class="tbl"><thead><tr><th>Monthly operation</th><th>Amount</th><th>Responsible</th><th>Timeline / due</th><th>Remarks</th><th>Payment method</th><th>Finance status</th><th>Action</th></tr></thead>
+      <tbody>${D.adminOps.map((o,i)=>`<tr><td class="bold">${o.name}</td><td style="font-weight:700;color:var(--maroon)">${RWF(o.amount)}</td><td class="muted">${o.responsible}</td><td class="muted">${o.timeline}</td><td class="muted">${o.remarks}</td><td class="muted">${o.method}</td><td><span class="badge ${o.financeRequestId?'b-green':'b-amber'}">${o.financeRequestId?'Sent to Finance':'Not sent'}</span></td><td>${o.financeRequestId?`<button class="btn sm" onclick="go('${ROLE==='finance'?'f-req':ROLE==='director'?'d-finance':'m-req'}')">View Request</button>`:`<button class="btn sm maroon" onclick="sendAdminToFinance(${i})">Send to Finance Request</button>`}</td></tr>`).join('')}</tbody></table>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">Asset Register</div>
+      <table class="tbl"><thead><tr><th>Category</th><th>Name</th><th>Responsible</th><th>Contact</th><th>Status</th></tr></thead>
+      <tbody>${D.assets.map(a=>`<tr><td class="bold">${a.category}</td><td>${a.name}</td><td class="muted">${a.responsible}</td><td class="muted">${a.contact}</td><td><span class="badge b-green">${a.status}</span></td></tr>`).join('')}</tbody></table>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr">Inventory & Office Supplies</div>
+      <table class="tbl"><thead><tr><th>Item</th><th>Category</th><th>Qty</th><th>Assigned / store</th><th>Location</th><th>Status</th><th>Docs</th></tr></thead>
+      <tbody>${D.inventory.map(i=>`<tr><td class="bold">${i.item}</td><td>${i.category}</td><td>${i.quantity}</td><td class="muted">${i.assigned}</td><td class="muted">${i.location}</td><td><span class="badge ${i.status==='Low stock'?'b-amber':i.status==='Available'?'b-green':'b-blue'}">${i.status}</span></td><td class="muted">${i.docs}</td></tr>`).join('')}</tbody></table>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">Vehicle / Travel Records</div>
+      <table class="tbl"><thead><tr><th>Vehicle</th><th>Purpose</th><th>Traveler / team</th><th>Destination</th><th>Date</th><th>Status</th><th>Docs</th></tr></thead>
+      <tbody>${D.travel.map(t=>`<tr><td class="bold">${t.vehicle}</td><td>${t.purpose}</td><td class="muted">${t.traveler}</td><td class="muted">${t.destination}</td><td class="muted">${t.date}</td><td><span class="badge ${t.status==='Scheduled'?'b-green':'b-amber'}">${t.status}</span></td><td class="muted">${t.docs}</td></tr>`).join('')}</tbody></table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">Vendors / Suppliers</div>
+    <table class="tbl"><thead><tr><th>Category</th><th>Name</th><th>Supporting documents</th><th>Timeline</th><th>Telephone</th><th>Account No.</th><th>Type</th></tr></thead>
+    <tbody>${D.vendors.map(v=>`<tr><td class="bold">${v.category}</td><td>${v.name}</td><td class="muted">${v.docs}</td><td class="muted">${v.timeline}</td><td class="muted">${v.tel}</td><td class="muted">${v.account}</td><td><span class="badge b-blue">${v.type}</span></td></tr>`).join('')}</tbody></table>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <div class="panel-hdr">Employee / HR Register</div>
+    <table class="tbl"><thead><tr><th>Employee</th><th>Role</th><th>Department</th><th>Contract</th><th>Payroll</th><th>Status</th><th>Remarks</th></tr></thead>
+    <tbody>${D.hr.map(h=>`<tr><td class="bold">${h.employee}</td><td>${h.role}</td><td class="muted">${h.department}</td><td class="muted">${h.contract}</td><td class="muted">${h.payroll}</td><td><span class="badge ${h.status.includes('payroll')?'b-green':'b-blue'}">${h.status}</span></td><td class="muted">${h.remarks}</td></tr>`).join('')}</tbody></table>
+  </div>
+  <div class="grid2" style="margin-top:14px">
+    <div class="panel"><div class="panel-hdr">Payroll Checklist</div><div style="padding:14px;font-size:12px;color:var(--text-2);line-height:1.8"><div>Timesheets or attendance confirmed</div><div>Allowances and salary changes reviewed</div><div>Taxes and statutory deductions prepared</div><div>Finance request created before disbursement</div></div></div>
+    <div class="panel"><div class="panel-hdr">Administration Notes</div><div style="padding:14px;font-size:12px;color:var(--text-2);line-height:1.8"><div>Contracts and internship records stored under Administration</div><div>Vendors, assets, inventory, travel, and payroll are grouped in this module</div><div>Finance handles payments after Administration sends a request</div><div>Renewal reminders can flag supplier, vehicle, rent, and subscription records</div></div></div>
+  </div>`};
+}
+
+function vGrants(){
+  return{btns:`<button class="btn gp" onclick="toast('Grant record form opened!')">+ Grant</button><button class="btn" onclick="toast('Grants database exported!')">Export Grants</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Grants Database</div></div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Grant Progress Tracker</div>
+    <table class="tbl"><thead><tr><th>Grant name</th><th>Funder</th><th>Who</th><th>Link</th><th>Progress</th><th>Remarks</th></tr></thead>
+    <tbody>${D.grants.map(g=>`<tr><td class="bold">${g.name}</td><td class="muted">${g.funder}</td><td>${g.who}</td><td class="muted">${g.link}</td><td><span class="badge b-blue">${g.progress}</span></td><td class="muted">${g.remarks}</td></tr>`).join('')}</tbody></table>
+  </div>
+  <div class="grid3">
+    ${[
+      {t:'Inputs',d:'Budget, staff time, tools, activity resources',c:'#1D4ED8'},
+      {t:'Outputs',d:'Reports, attendance, photos, testimonials, documentary evidence',c:'#059669'},
+      {t:'Outcomes',d:'Survey results, narrative reports, indicators, description notes',c:'#8B0000'},
+    ].map(x=>`<div class="panel"><div class="panel-hdr" style="background:${x.c}">${x.t}</div><div style="padding:14px;font-size:12px;color:var(--text-2);line-height:1.6">${x.d}</div></div>`).join('')}
+  </div>`};
+}
+
+function vMEvidence(){
+  return{btns:`<button class="btn gp" onclick="toast('Evidence upload form opened!')">+ Evidence</button><button class="btn" onclick="toast('M&E evidence exported!')">Export</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">M&E Evidence Database</div></div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Data, Testimonials, Videos & Documentary Evidence</div>
+    <table class="tbl"><thead><tr><th>Project</th><th>Activity</th><th>Data</th><th>Testimonials</th><th>Videos</th><th>Documentary</th><th>Survey results</th><th>Status</th></tr></thead>
+    <tbody>${D.evidence.map(e=>`<tr><td class="bold">${e.project}</td><td>${e.activity}</td><td class="muted">${e.data}</td><td class="muted">${e.testimonials}</td><td class="muted">${e.videos}</td><td class="muted">${e.documentary}</td><td class="muted">${e.survey}</td><td><span class="badge ${e.status==='Uploaded'?'b-green':'b-amber'}">${e.status}</span></td></tr>`).join('')}</tbody></table>
+  </div>
+  <div class="grid3">
+    ${[
+      {t:'Narrative Report',d:'Upload monthly or activity narrative reports linked to project objectives.',c:'#8B0000'},
+      {t:'Survey Results',d:'Store survey outputs, baseline/endline notes, and verification indicators.',c:'#1D4ED8'},
+      {t:'Media Evidence',d:'Keep photos, testimonial videos, documentary material, and field attachments.',c:'#059669'},
+    ].map(x=>`<div class="panel"><div class="panel-hdr" style="background:${x.c}">${x.t}</div><div style="padding:14px;font-size:12px;color:var(--text-2);line-height:1.6">${x.d}</div></div>`).join('')}
+  </div>`};
+}
+
+// ════════════════════════════════════════════
+// MANAGER VIEWS
+// ════════════════════════════════════════════
+function vMDash(){
+  const open=D.tasks.filter(t=>t.status!=='Done').length;
+  const done=D.tasks.filter(t=>t.status==='Done').length;
+  return{btns:`<button class="btn gp" onclick="showModal('addTask')">+ Add Task</button><button class="btn ghost-maroon" onclick="showModal('addRequest')">+ Request</button><button class="btn gp" onclick="showModal('addProject')">+ Project</button>`,html:`
+  <div class="banner" style="background:linear-gradient(135deg,#081F18,#1D9E75)">
+    <div><div class="banner-title">Good morning, Manager 👋</div><div class="banner-sub">Manager overview — ${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div></div>
+    <button class="btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff;font-size:12px" onclick="toast('Generating summary report...')">Export Summary</button>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card sc-maroon"><div class="stat-val">${D.projects.length}</div><div class="stat-label">Active Projects</div><div class="stat-sub">4 program areas</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val">${open}</div><div class="stat-label">Open Tasks</div><div class="stat-sub">${D.tasks.filter(t=>t.status==='In Progress').length} in progress</div></div>
+    <div class="stat-card sc-amber"><div class="stat-val">${D.requests.filter(r=>r.status==='Submitted').length}</div><div class="stat-label">Pending Approvals</div><div class="stat-sub">awaiting review</div></div>
+    <div class="stat-card sc-green"><div class="stat-val">${Math.round(done/D.tasks.length*100)}%</div><div class="stat-label">Completion Rate</div><div class="stat-sub">this week</div></div>
+    <div class="stat-card sc-gray"><div class="stat-val">4</div><div class="stat-label">Delayed Items</div><div class="stat-sub">flagged for review</div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr">Team Progress <span class="badge">${D.team.length} staff</span></div>
+      ${D.team.map(m=>{const p=m.tasks?Math.round(m.done/m.tasks*100):0;return`<div class="team-row"><div class="avatar" style="background:${m.color};width:36px;height:36px;font-size:12px">${m.av}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${m.name}</div><div style="font-size:11px;color:var(--text-2)">${m.role} · ${m.done}/${m.tasks} tasks</div><div class="pw"><div class="pb" style="width:${p}%;background:${m.color}"></div></div></div><span class="badge ${p===100?'b-green':p>=70?'b-blue':'b-amber'}">${p}%</span></div>`;}).join('')}
+    </div>
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-hdr">Approval Queue <span class="badge">${D.requests.filter(r=>r.status==='Submitted').length} pending</span></div>
+        ${D.requests.filter(r=>r.status==='Submitted').map(r=>`<div class="dl-row"><div><div style="font-weight:600;font-size:13px">${r.title}</div><div style="font-size:11px;color:var(--text-2)">${r.program} · ${r.by}</div></div><div style="display:flex;gap:6px;align-items:center"><span style="font-weight:700;color:var(--maroon)">${RWF(r.amount)}</span><button class="btn sm gp" onclick="approveReq(${r.id})">Approve</button></div></div>`).join('')||'<div style="padding:12px 16px;font-size:12px;color:var(--text-2)">No pending requests</div>'}
+      </div>
+      <div class="panel">
+        <div class="panel-hdr">Project Progress</div>
+        ${D.projects.map(p=>{const pc=p.tasks>0?Math.round(p.done/p.tasks*100):0;return`<div class="bb-row"><div class="bb-label">${p.name}</div><div class="bb-track"><div class="bb-fill" style="width:${pc}%;background:${p.color}"></div></div><div class="bb-pct" style="color:${p.color}">${pc}%</div></div>`;}).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">Recent Activity Feed</div>
+    ${[
+      {c:'#8B0000',w:'Software / IT Intern',a:'submitted request for Cap. Building workshop',t:'2m ago'},
+      {c:'#059669',w:'Program Manager',a:'approved M&E Dashboard task — moved to Done',t:'14m ago'},
+      {c:'#D97706',w:'Finance Officer',a:'payment processed — RWF 320,000',t:'1h ago'},
+      {c:'#1D4ED8',w:'M&E Officer',a:'uploaded attendance list for provider training',t:'3h ago'},
+      {c:'#7C3AED',w:'Developer',a:'created new task in Digital Platform',t:'5h ago'},
+    ].map(f=>`<div style="display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid #F5F5F5;font-size:12px"><div style="width:8px;height:8px;border-radius:50%;background:${f.c};flex-shrink:0;margin-top:4px"></div><div><span style="font-weight:600">${f.w}</span> <span style="color:var(--text-2)">${f.a}</span><div style="font-size:10px;color:var(--text-3);margin-top:2px">${f.t}</div></div></div>`).join('')}
+  </div>`};
+}
+
+function vMProj(){
+  return{btns:`<button class="btn gp" onclick="showModal('addProject')">+ New Project</button>`,html:`
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+  ${D.projects.map(p=>{
+    const pc=p.tasks>0?Math.round(p.done/p.tasks*100):0,uc=p.budget>0?Math.round(p.spent/p.budget*100):0;
+    const sc=p.status==='Active'?'b-green':p.status==='Planning'?'b-amber':'b-gray';
+    return`<div class="proj-card">
+      <div class="proj-card-top" style="background:${p.color}"></div>
+      <div class="proj-card-body">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+          <div style="font-size:15px;font-weight:700;color:${p.color}">${p.name}</div>
+          <span class="badge ${sc}">${p.status}</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:.04em">${p.projectCode||'PRJ-DEMO'}</div>
+        <div class="proj-card-desc">${p.desc}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;padding:9px;background:#F8FAFC;border:1px solid var(--gray-border);border-radius:var(--r-sm);font-size:11px">
+          <div><div style="color:var(--text-3);font-size:9px;font-weight:800;text-transform:uppercase">Work plan</div><div style="font-weight:700;color:var(--text)">${p.workPlan||'Proposal work plan pending'}</div></div>
+          <div><div style="color:var(--text-3);font-size:9px;font-weight:800;text-transform:uppercase">Detailed budget</div><div style="font-weight:700;color:var(--text)">${p.detailedBudget||RWF(p.budget)}</div></div>
+          <div><div style="color:var(--text-3);font-size:9px;font-weight:800;text-transform:uppercase">Results / objectives</div><div style="font-weight:700;color:var(--text)">${p.objectives||'Objectives to be added'}</div></div>
+          <div><div style="color:var(--text-3);font-size:9px;font-weight:800;text-transform:uppercase">Responsible title</div><div style="font-weight:700;color:var(--text)">${p.owner||'Program Manager'}</div></div>
+          <div><div style="color:var(--text-3);font-size:9px;font-weight:800;text-transform:uppercase">Document</div><div style="font-weight:700;color:var(--text)">${p.doc||'Not uploaded'}</div></div>
+        </div>
+        ${p.doc?`<div style="font-size:11px;margin-bottom:10px;padding:6px 10px;background:var(--gray-light);border-radius:6px;display:flex;align-items:center;gap:6px"><span>📎</span><span style="color:var(--maroon);font-weight:500">${p.doc}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text-2)">Tasks</span><span style="font-weight:700;color:${p.color}">${pc}%</span></div>
+        <div class="pw"><div class="pb" style="width:${pc}%;background:${p.color}"></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;padding:10px;background:var(--gray-light);border-radius:var(--r-sm);font-size:12px">
+          <div><div style="color:var(--text-2);margin-bottom:2px">Budget</div><div style="font-weight:700">${RWF(p.budget)}</div></div>
+          <div><div style="color:var(--text-2);margin-bottom:2px">Spent</div><div style="font-weight:700;color:${p.color}">${RWF(p.spent)}</div></div>
+          <div><div style="color:var(--text-2);margin-bottom:2px">Tasks</div><div style="font-weight:700">${p.tasks} total</div></div>
+          <div><div style="color:var(--text-2);margin-bottom:2px">Done</div><div style="font-weight:700;color:#059669">${p.done}/${p.tasks}</div></div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="color:var(--text-2)">Budget utilisation</span><span style="font-weight:700;color:${uc>90?'#DC2626':uc>70?'#D97706':'#059669'}">${uc}%</span></div>
+          <div class="pw"><div class="pb" style="width:${uc}%;background:${uc>90?'#DC2626':uc>70?'#D97706':'#059669'}"></div></div>
+        </div>
+        <div style="margin-top:10px;padding:8px 10px;background:#FFF8F8;border-radius:var(--r-sm);border:1px solid var(--maroon-border);font-size:11px;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--text-2)">📅 Period</span>
+          <span style="font-weight:600;color:var(--maroon)">${p.start?p.start.replace(/-/g,'/').replace(/2026\//,''):'—'} → ${p.end?p.end.replace(/-/g,'/').replace(/2026\//,''):'—'}</span>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:6px">
+          <button class="btn sm gp" style="flex:1" onclick="openProjDetail(${p.id})">Open Project →</button>
+          <button class="btn sm ghost-maroon" onclick="showModal('addTask',null,${p.id})">+ Create activities</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="panel-hdr">Project Reports & M&E Evidence</div>
+    <table class="tbl"><thead><tr><th>Report item</th><th>Belongs to</th><th>Evidence</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr><td class="bold">Narrative report</td><td class="muted">Projects / objectives</td><td class="muted">Monthly narrative, description notes, implementation progress</td><td><span class="badge b-blue">Inside project</span></td><td><button class="btn sm" onclick="toast('Project report exported!')">Export Report</button></td></tr>
+      <tr><td class="bold">M&E evidence</td><td class="muted">Activities / outputs</td><td class="muted">Data, testimonials, videos, survey results, documentary evidence</td><td><span class="badge b-green">Tracked</span></td><td><button class="btn sm gp" onclick="go('m-evidence')">Open Evidence</button></td></tr>
+    </tbody></table>
+  </div>`};
+}
+
+function vMTeam(){
+  return{btns:`<button class="btn gp" onclick="showModal('addUser')">+ Add User</button>`,html:`
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr">User Management <span class="badge">${D.team.length} users</span></div>
+      <div style="padding:10px 14px;background:var(--gray-light);border-bottom:1px solid var(--gray-border);font-size:12px;color:var(--text-2)">Admin can add new users here. Added users become available in task assignment, reviewer, and responsible-title dropdowns.</div>
+      ${D.team.map(m=>{const p=m.tasks?Math.round(m.done/m.tasks*100):0;const lc=p===100?'b-green':p>=70?'b-blue':'b-amber';return`<div class="team-row"><div class="avatar" style="background:${m.color};width:38px;height:38px;font-size:12px">${m.av}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${m.name}</div><div style="font-size:11px;color:var(--text-2)">${m.role}${m.department?' · '+m.department:''}${m.access?' · '+m.access:''}</div><div class="pw"><div class="pb" style="width:${p}%;background:${m.color}"></div></div></div><div style="text-align:right"><span class="badge ${lc}">${m.tasks===0?'New user':p===100?'Complete':p>=70?'On Track':'Needs attention'}</span><div style="font-size:11px;color:var(--text-2);margin-top:4px">${m.done}/${m.tasks} tasks</div></div></div>`;}).join('')}
+    </div>
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-hdr">Task Status Breakdown</div>
+        <div style="padding:14px">
+          ${['Done','In Progress','Not Started','Review'].map(st=>{const cnt=D.tasks.filter(t=>t.status===st).length;const cols={'Done':'#059669','In Progress':'#1D4ED8','Not Started':'#94A3B8','Review':'#D97706'};const p=Math.round(cnt/D.tasks.length*100);return`<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--text-2)">${st}</span><span style="font-weight:700;color:${cols[st]}">${cnt}</span></div><div class="pw"><div class="pb" style="width:${p}%;background:${cols[st]}"></div></div></div>`;}).join('')}
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-hdr">Upcoming Deadlines</div>
+        ${[{n:'M&E data fields',d:'Jun 12',days:'Today',dc:'#DC2626'},{n:'Provider network',d:'Jun 14',days:'2 days',dc:'#D97706'},{n:'Advocacy brief',d:'Jun 18',days:'6 days',dc:'#059669'}].map(d=>`<div class="dl-row"><div style="font-weight:500;font-size:13px">${d.n}</div><div style="display:flex;gap:8px;align-items:center"><span style="background:${d.dc}18;color:${d.dc};padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700">${d.days}</span><span style="color:var(--text-3);font-size:11px">${d.d}</span></div></div>`).join('')}
+      </div>
+    </div>
+  </div>`};
+}
+
+function vMTasks(){
+  const cols=['Not Started','In Progress','Review','Done'];
+  const colC={'Not Started':'#374151','In Progress':'#1D4ED8','Review':'#D97706','Done':'#059669'};
+  const filtered=D.kFilter==='all'?D.tasks:D.tasks.filter(t=>D.projects.find(p=>p.id===t.project)?.name===D.kFilter);
+  return{btns:`<button class="btn gp" onclick="showModal('addTask')">+ Assign Task</button>`,html:`
+  <div class="filter-bar">
+    <button class="filter-btn ${D.kFilter==='all'?'active':''}" onclick="setKF('all',this)">All Projects</button>
+    ${D.projects.map(p=>`<button class="filter-btn ${D.kFilter===p.name?'active':''}" onclick="setKF('${p.name}',this)">${p.name}</button>`).join('')}
+  </div>
+  <div class="kanban">
+  ${cols.map(col=>{
+    const tasks=filtered.filter(t=>t.status===col);
+    const c=colC[col];
+    return`<div>
+      <div class="k-col-hdr" style="background:${c}">${col} <span style="opacity:.65">(${tasks.length})</span></div>
+      ${tasks.map(t=>`<div class="k-card" style="border-left-color:${c}">
+        <div class="k-card-title">${t.title}</div>
+        <div class="k-card-proj">${D.projects.find(p=>p.id===t.project)?.name||'—'}</div>
+        <div style="font-size:11px;color:var(--text-2);margin-bottom:6px">${t.desc?.substring(0,60)}${t.desc?.length>60?'…':''}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:7px;padding:7px;background:#F8FAFC;border-radius:6px;font-size:10px;color:var(--text-2)">
+          <div><b>Activity:</b> ${t.activity||D.projects.find(p=>p.id===t.project)?.activity||'—'}</div>
+          <div><b>Output:</b> ${t.output||'—'}</div>
+          <div><b>Reviewer:</b> ${t.supervisor||'—'}</div>
+          <div><b>Progress:</b> ${t.progress||0}%</div>
+          <div><b>Inputs:</b> ${t.inputs||'—'}</div>
+          <div><b>Verification:</b> ${t.mov||'—'}</div>
+          <div><b>Indicators:</b> ${t.indicators||'—'}</div>
+          <div><b>Challenges:</b> ${t.comments||'—'}</div>
+        </div>
+        <div class="k-card-foot">
+          <span class="badge ${BC[t.priority]||'b-gray'}">${t.priority}</span>
+          <div style="display:flex;align-items:center;gap:5px">
+            ${t.assign&&t.assign!=='(Unassigned)'?`<div class="avatar" style="background:${AVC[t.assign]||'#888'}">${t.assign.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><span style="font-size:10px;color:var(--text-2)">${t.assign}</span>`:`<span style="font-size:10px;color:var(--text-3);font-style:italic">Unassigned</span>`}
+          </div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:5px">
+          <button class="btn sm ghost-maroon" style="flex:1;font-size:10px" onclick="showModal('assignTask',${t.id})">👤 Reassign</button>
+        </div>
+      </div>`).join('')}
+      <div style="border:1.5px dashed var(--maroon-border);border-radius:var(--r-sm);padding:8px;text-align:center;font-size:11px;color:var(--text-3);cursor:pointer;margin-top:4px" onclick="showModal('addTask')">+ Add task</div>
+    </div>`;
+  }).join('')}
+  </div>`};
+}
+
+function vReqs(){
+  const filtered=D.rFilter==='all'?D.requests:D.requests.filter(r=>r.status===D.rFilter);
+  return{btns:`<button class="btn ghost-maroon" onclick="showModal('addRequest')">+ New Request</button>`,html:`
+  <div class="filter-bar">
+    ${['all','Draft','Submitted','Approved','Paid'].map(f=>`<button class="filter-btn ${D.rFilter===f?'active':''}" onclick="setRF('${f}',this)">${f==='all'?'All':f}</button>`).join('')}
+  </div>
+  ${renderDeptMap()}
+  ${filtered.map(r=>`<div class="req-card">
+    <div class="req-hdr"><div><div class="req-title">${r.title}</div><div style="font-size:11px;color:var(--text-2);margin-top:2px">Code: ${r.code}</div></div><span class="badge ${RC[r.status]||'b-gray'}">${r.status}</span></div>
+    <div class="req-meta">
+      <div><div style="color:var(--text-2);font-size:10px;font-weight:600">Program</div><div style="font-weight:600">${r.program}</div></div>
+      <div><div style="color:var(--text-2);font-size:10px;font-weight:600">Submitted by</div><div style="font-weight:600">${r.by}</div></div>
+      <div><div style="color:var(--text-2);font-size:10px;font-weight:600">Amount</div><div style="font-weight:700;color:var(--maroon)">${RWF(r.amount)}</div></div>
+      <div><div style="color:var(--text-2);font-size:10px;font-weight:600">Date</div><div style="font-weight:600">${r.date}</div></div>
+    </div>
+    ${renderRequestDetails(r)}
+    ${renderGoldenRule(r)}
+    ${renderWorkflow(r)}
+    ${renderRequestComments(r)}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${r.status==='Draft'?`<button class="btn blue sm" onclick="cRS(${r.id},'Submitted');toast('Request submitted for approval!')">Submit for Approval</button>`:''}
+      ${r.status==='Submitted'?`<button class="btn gp sm" onclick="approveReq(${r.id})">✓ Approve</button><button class="btn sm" onclick="toast('Returned with comment.')">Return</button>`:''}
+      ${r.status==='Approved'?`<button class="btn sm" style="background:#D97706;border-color:#D97706;color:#fff" onclick="toast('Forwarded to Finance!')">Forward to Finance</button>`:''}
+      ${r.status==='Paid'?`<button class="btn sm ghost-maroon" onclick="toast('Evidence upload opens here!')">Upload Evidence</button><span class="badge b-green" style="align-self:center">Complete ✓</span>`:''}
+    </div>
+  </div>`).join('')}`};
+}
+
+function vMLogs(){
+  const logs=[
+    {name:'Software / IT Intern',role:'Developer',done:4,total:5,comment:'Good progress. Prioritise M&E fields — it blocks the dashboard build.'},
+    {name:'Data Officer',role:'Data Analyst',done:3,total:4,comment:'Please add output links to all completed tasks.'},
+    {name:'M&E Officer',role:'M&E Officer',done:4,total:4,comment:'Excellent work this week — all tasks complete!'},
+    {name:'Developer',role:'Developer',done:5,total:7,comment:'2 tasks still need output evidence links.'},
+    {name:'Program Manager',role:'Program Manager',done:5,total:6,comment:'—'},
+  ];
+  return{btns:`<button class="btn" onclick="toast('Work log report exported!')">Export Report</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Staff Work Logs — Week 3, June 2026</div></div>
+  ${logs.map(m=>{const p=Math.round(m.done/m.total*100);return`<div class="panel"><div class="panel-hdr">${m.name} · ${m.role}<div style="display:flex;gap:8px;align-items:center"><span class="badge">${m.done}/${m.total} done</span><button class="btn sm" style="background:var(--green);border-color:var(--green);color:#fff;font-size:10px" onclick="toast('Comment saved!')">Save Comment</button></div></div><div style="padding:12px 16px;display:grid;grid-template-columns:80px 1fr;gap:12px;align-items:center"><div><div style="font-size:11px;color:var(--text-2);margin-bottom:3px">Completion</div><div style="font-size:24px;font-weight:700;color:${p===100?'#059669':p>=70?'#1D4ED8':'#D97706'}">${p}%</div><div class="pw"><div class="pb" style="width:${p}%;background:${p===100?'#059669':p>=70?'#1D4ED8':'#D97706'}"></div></div></div><div><div style="font-size:11px;font-weight:600;color:var(--text-2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em">Your comment</div><div style="font-size:12px;color:var(--text-2);font-style:italic;padding:8px 12px;background:${m.comment==='—'?'var(--gray-light)':'#FFF8F8'};border-radius:var(--r-sm);border-left:3px solid ${m.comment==='—'?'var(--gray-border)':'var(--maroon)'}">${m.comment}</div></div></div></div>`;}).join('')}
+  `};
+}
+
+// ════════════════════════════════════════════
+// DIRECTOR VIEWS
+// ════════════════════════════════════════════
+function vDDash(){
+  const tb=D.projects.reduce((a,p)=>a+p.budget,0);
+  const ts=D.projects.reduce((a,p)=>a+p.spent,0);
+  const pending=D.requests.filter(r=>r.status==='Submitted').length;
+  const approved=D.requests.filter(r=>r.status==='Approved'||r.status==='Paid').length;
+  const done=D.tasks.filter(t=>t.status==='Done').length;
+  const taskPct=D.tasks.length?Math.round(done/D.tasks.length*100):0;
+  return{btns:`<button class="btn gp" onclick="toast('Executive summary generated!')">Export Summary</button>`,html:`
+  <div class="banner" style="background:linear-gradient(135deg,#3D0000,#8B0000)">
+    <div><div class="banner-title">Director Overview</div><div class="banner-sub">Executive approvals · Project oversight · Budget position</div></div>
+    <button class="btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff;font-size:12px" onclick="go('d-approvals')">Review Approvals</button>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card sc-maroon"><div class="stat-val">${D.projects.length}</div><div class="stat-label">Projects</div><div class="stat-sub">under oversight</div></div>
+    <div class="stat-card sc-amber"><div class="stat-val">${pending}</div><div class="stat-label">Pending Approval</div><div class="stat-sub">awaiting decision</div></div>
+    <div class="stat-card sc-green"><div class="stat-val">${approved}</div><div class="stat-label">Approved Requests</div><div class="stat-sub">approved or paid</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val">${taskPct}%</div><div class="stat-label">Implementation</div><div class="stat-sub">task completion</div></div>
+    <div class="stat-card sc-gray"><div class="stat-val" style="font-size:18px">${RWF(tb-ts)}</div><div class="stat-label">Budget Balance</div><div class="stat-sub">remaining funds</div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr">Executive Approval Queue <span class="badge">${pending} pending</span></div>
+      ${D.requests.filter(r=>r.status==='Submitted').map(r=>`<div class="dl-row"><div><div style="font-weight:600;font-size:13px">${r.title}</div><div style="font-size:11px;color:var(--text-2)">${r.by} · ${r.date}</div></div><div style="display:flex;gap:6px;align-items:center"><span style="font-weight:700;color:var(--maroon)">${RWF(r.amount)}</span><button class="btn sm gp" onclick="directorApprove(${r.id})">Approve</button></div></div>`).join('')||'<div style="padding:12px 16px;font-size:12px;color:var(--text-2)">No requests waiting for director decision</div>'}
+    </div>
+    <div class="panel">
+      <div class="panel-hdr">Strategic Project Health</div>
+      ${D.projects.map(p=>{const pc=p.tasks>0?Math.round(p.done/p.tasks*100):0;return`<div class="bb-row"><div class="bb-label">${p.name}</div><div class="bb-track"><div class="bb-fill" style="width:${pc}%;background:${p.color}"></div></div><div class="bb-pct" style="color:${p.color}">${pc}%</div></div>`;}).join('')}
+    </div>
+  </div>`};
+}
+
+function vDApprovals(){
+  return{btns:`<button class="btn gp" onclick="toast('Approval register exported!')">Export Register</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Executive Approvals</div></div>
+  ${renderDeptMap()}
+  ${D.requests.map(r=>`<div class="req-card">
+    <div class="req-hdr"><div><div class="req-title">${r.title}</div><div style="font-size:11px;color:var(--text-2);margin-top:2px">Code: ${r.code} · ${r.by} · ${r.date}</div></div><span class="badge ${RC[r.status]||'b-gray'}">${r.status}</span></div>
+    <div class="req-meta"><div><div style="color:var(--text-2);font-size:10px">Requesting title</div><div style="font-weight:600">${r.by}</div></div><div><div style="color:var(--text-2);font-size:10px">Amount</div><div style="font-weight:700;font-size:15px;color:var(--maroon)">${RWF(r.amount)}</div></div><div><div style="color:var(--text-2);font-size:10px">Project code</div><div style="font-weight:600">${r.projectCode}</div></div><div><div style="color:var(--text-2);font-size:10px">Date</div><div style="font-weight:600">${r.date}</div></div></div>
+    ${renderRequestDetails(r)}
+    ${renderGoldenRule(r)}
+    ${renderWorkflow(r)}
+    ${renderRequestComments(r)}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${r.status==='Submitted'?`<button class="btn gp sm" onclick="directorApprove(${r.id})">Executive Approve</button><button class="btn danger sm" onclick="toast('Returned to manager with director comment.')">Return with Comment</button>`:''}
+      ${r.status==='Approved'?`<span class="badge b-green" style="align-self:center">Executive approval recorded</span><button class="btn sm" onclick="go('d-finance')">View finance position</button>`:''}
+      ${r.status==='Paid'?`<span class="badge b-green" style="align-self:center">Paid and completed</span>`:''}
+      ${r.status==='Draft'?`<span style="font-size:12px;color:var(--text-2)">Draft request, not ready for director action</span>`:''}
+    </div>
+  </div>`).join('')}`};
+}
+
+function vDProjects(){
+  return{btns:'',html:`
+  <div class="panel">
+    <div class="panel-hdr">Project Oversight</div>
+    <table class="tbl"><thead><tr><th>Project</th><th>Code</th><th>Responsible</th><th>Objectives</th><th>Budget</th><th>Spent</th><th>Progress</th><th>Status</th></tr></thead>
+    <tbody>${D.projects.map(p=>{const pc=p.tasks>0?Math.round(p.done/p.tasks*100):0;const sc=p.status==='Active'?'b-green':p.status==='Planning'?'b-amber':'b-gray';return`<tr><td class="bold">${p.name}</td><td class="muted">${p.projectCode||'PRJ-DEMO'}</td><td class="muted">${p.owner||'Program Manager'}</td><td class="muted">${p.objectives||p.desc}</td><td class="bold">${RWF(p.budget)}</td><td style="color:var(--maroon);font-weight:600">${RWF(p.spent)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="width:80px;background:#F1F5F9;border-radius:20px;height:6px;overflow:hidden"><div style="width:${pc}%;height:100%;background:${p.color};border-radius:20px"></div></div><span style="font-weight:700;font-size:11px;color:${p.color}">${pc}%</span></div></td><td><span class="badge ${sc}">${p.status}</span></td></tr>`;}).join('')}</tbody></table>
+  </div>`};
+}
+
+function vDFinance(){
+  const tb=D.projects.reduce((a,p)=>a+p.budget,0),ts=D.projects.reduce((a,p)=>a+p.spent,0);
+  const util=tb?Math.round(ts/tb*100):0;
+  return{btns:`<button class="btn maroon" onclick="toast('Director finance summary exported!')">Export Finance Summary</button>`,html:`
+  <div class="stat-grid">
+    <div class="stat-card sc-amber"><div class="stat-val" style="font-size:20px">${RWF(tb)}</div><div class="stat-label">Total Budget</div></div>
+    <div class="stat-card sc-green"><div class="stat-val" style="font-size:20px">${RWF(ts)}</div><div class="stat-label">Total Spent</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val">${util}%</div><div class="stat-label">Utilisation</div></div>
+    <div class="stat-card sc-maroon"><div class="stat-val">${D.requests.filter(r=>r.status==='Paid').length}</div><div class="stat-label">Paid Requests</div></div>
+  </div>
+  ${renderFinanceChannel()}
+  <div class="panel"><div class="panel-hdr">Budget Position by Project</div>
+    <table class="tbl"><thead><tr><th>Project</th><th>Budget</th><th>Spent</th><th>Remaining</th><th>Utilisation</th><th>Director note</th></tr></thead>
+    <tbody>${D.projects.map(p=>{const pc=p.budget>0?Math.round(p.spent/p.budget*100):0,rem=p.budget-p.spent;return`<tr><td class="bold">${p.name}</td><td class="bold">${RWF(p.budget)}</td><td style="color:var(--maroon);font-weight:600">${RWF(p.spent)}</td><td style="color:#059669;font-weight:600">${RWF(rem)}</td><td>${pc}%</td><td class="muted">${pc>90?'Review overspend risk':'Within expected range'}</td></tr>`;}).join('')}</tbody></table>
+  </div>`};
+}
+
+// ════════════════════════════════════════════
+// STAFF VIEWS
+// ════════════════════════════════════════════
+function vSDash(){
+  const my=D.tasks.filter(t=>t.assign==='Software / IT Intern');
+  const done=my.filter(t=>t.status==='Done').length;
+  return{btns:`<button class="btn gp" onclick="showModal('addTask')">+ Add Task</button><button class="btn ghost-maroon" onclick="showModal('addRequest')">+ Submit Request</button>`,html:`
+  <div class="banner" style="background:linear-gradient(135deg,#081F18,#1D9E75)">
+    <div><div class="banner-title">Hello implementor</div><div class="banner-sub">Your personal workspace — ${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</div></div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card sc-maroon"><div class="stat-val">${my.length}</div><div class="stat-label">My Tasks</div><div class="stat-sub">assigned to me</div></div>
+    <div class="stat-card sc-green"><div class="stat-val">${done}</div><div class="stat-label">Completed</div><div class="stat-sub">${Math.round(done/my.length*100)}% done</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val">${my.filter(t=>t.status==='In Progress').length}</div><div class="stat-label">In Progress</div><div class="stat-sub">active now</div></div>
+    <div class="stat-card sc-gray"><div class="stat-val">0</div><div class="stat-label">Overdue</div><div class="stat-sub">all on track ✓</div></div>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-hdr">My Tasks This Week</div>
+      <table class="tbl"><thead><tr><th>Task</th><th>Project</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead>
+      <tbody>${my.map(t=>`<tr><td class="bold">${t.title}</td><td class="muted">${D.projects.find(p=>p.id===t.project)?.name||'—'}</td><td><span class="badge ${SC[t.status]||'b-gray'}">${t.status}</span></td><td><span class="badge ${BC[t.priority]||'b-gray'}">${t.priority}</span></td><td class="muted">${t.due}</td></tr>`).join('')}</tbody></table>
+    </div>
+    <div>
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-hdr">Notifications</div>
+        ${[
+          {c:'#8B0000',m:'New task assigned: Write unit tests for form module',t:'1h ago'},
+          {c:'#059669',m:'Your request approved by Finance Officer',t:'3h ago'},
+          {c:'#7C3AED',m:'Manager commented on your work log',t:'Yesterday'},
+          {c:'#DC2626',m:'Deadline reminder: SRHR data fields — Jun 12',t:'Today'},
+        ].map(n=>`<div style="display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid #F5F5F5;font-size:12px"><div style="width:8px;height:8px;border-radius:50%;background:${n.c};flex-shrink:0;margin-top:3px"></div><div><span>${n.m}</span><div style="font-size:10px;color:var(--text-3);margin-top:2px">${n.t}</div></div></div>`).join('')}
+      </div>
+      <div class="panel">
+        <div class="panel-hdr">Available Tasks — Self-Assign</div>
+        <div style="padding:10px 14px;font-size:11px;color:var(--text-2);border-bottom:1px solid #F5F5F5">Click any task below to assign it to yourself</div>
+        ${D.tasks.filter(t=>!t.assign||t.assign==='(Unassigned)').slice(0,3).map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #F5F5F5;font-size:12px"><div><div style="font-weight:500">${t.title}</div><div style="font-size:10px;color:var(--text-2)">${D.projects.find(p=>p.id===t.project)?.name||'—'}</div></div><button class="btn sm ghost-maroon" onclick="selfAssign(${t.id})">Assign to me</button></div>`).join('')||'<div style="padding:12px 14px;font-size:12px;color:var(--text-2)">No unassigned tasks right now</div>'}
+      </div>
+    </div>
+  </div>`};
+}
+
+function vSTasks(){
+  const my=D.tasks.filter(t=>t.assign==='Software / IT Intern');
+  const cols=['Not Started','In Progress','Review','Done'];
+  const colC={'Not Started':'#374151','In Progress':'#1D4ED8','Review':'#D97706','Done':'#059669'};
+  return{btns:`<button class="btn maroon" onclick="showModal('addTask')">+ Add Task</button>`,html:`
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Unassigned Tasks — Click to take one</div>
+    ${D.tasks.filter(t=>!t.assign||t.assign==='(Unassigned)').map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid #F5F5F5;font-size:12px"><div><div style="font-weight:600">${t.title}</div><div style="font-size:11px;color:var(--text-2)">${D.projects.find(p=>p.id===t.project)?.name||'—'} · <span class="badge ${BC[t.priority]}" style="font-size:10px">${t.priority}</span></div></div><button class="btn sm gp" onclick="selfAssign(${t.id})">+ Assign to me</button></div>`).join('')||'<div style="padding:12px 14px;font-size:12px;color:var(--text-2)">All tasks are currently assigned</div>'}
+  </div>
+  <div style="font-size:14px;font-weight:700;margin-bottom:12px">My Kanban Board</div>
+  <div class="kanban">
+  ${cols.map(col=>{const tasks=my.filter(t=>t.status===col);const c=colC[col];return`<div><div class="k-col-hdr" style="background:${c}">${col} (${tasks.length})</div>${tasks.map(t=>`<div class="k-card" style="border-left-color:${c}"><div class="k-card-title">${t.title}</div><div class="k-card-proj">${D.projects.find(p=>p.id===t.project)?.name||'—'}</div><div class="k-card-foot"><span class="badge ${BC[t.priority]||'b-gray'}">${t.priority}</span><span style="font-size:10px;color:var(--text-2);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${t.due}">${t.due}</span></div></div>`).join('')}<div style="border:1.5px dashed var(--maroon-border);border-radius:var(--r-sm);padding:7px;text-align:center;font-size:11px;color:var(--text-3);cursor:pointer" onclick="showModal('addTask')">+ Add task</div></div>`;}).join('')}
+  </div>`};
+}
+
+function vSLog(){
+  const logs=[
+    {t:'Build activity request form UI',p:1,s:'Done',d:'Jun 08',out:'Figma link attached ✓'},
+    {t:'Set up database API endpoints',p:1,s:'In Progress',d:'Jun 12',out:'Draft PR #12 open'},
+    {t:'Review SRHR data entry fields',p:2,s:'In Progress',d:'Jun 12',out:'Notes in shared doc'},
+    {t:'Fix login authentication bug',p:1,s:'Done',d:'Jun 10',out:'Deployed to staging ✓'},
+    {t:'Write unit tests — form module',p:1,s:'Not Started',d:'Jun 20',out:'—'},
+  ];
+  return{btns:`<button class="btn gp" onclick="toast('Work log submitted! Manager notified.')">Submit Log</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Weekly Work Log</div><select class="form-input" style="width:auto;font-size:12px"><option>Week 1 — Jun 2–6</option><option>Week 2 — Jun 9–13</option><option selected>Week 3 — Jun 16–20</option></select></div>
+  <div class="panel"><div class="panel-hdr">Software / IT Intern · Software / IT Intern <span class="badge">4/5 done</span></div>
+  <div class="wl-row wl-hdr"><span>Task / Activity</span><span>Project</span><span>Status</span><span>Due</span><span>Output / Link</span></div>
+  ${logs.map((l,i)=>`<div class="wl-row" style="background:${i%2===0?'#fff':'#FAFAFA'}"><span style="font-weight:600">${l.t}</span><span style="color:var(--text-2)">${D.projects.find(p=>p.id===l.p)?.name||'—'}</span><span><span class="badge ${SC[l.s]||'b-gray'}">${l.s}</span></span><span style="color:var(--text-2)">${l.d}</span><span style="color:${l.out==='—'?'var(--text-3)':'var(--text)'}">${l.out}</span></div>`).join('')}
+  <div style="padding:8px 14px;border-top:1px solid #F5F5F5"><button class="btn sm" style="border:1.5px dashed var(--gray-border);color:var(--text-2)" onclick="toast('New row added!')">+ Add task row</button></div>
+  <div style="padding:12px 16px;border-top:1px solid #F5F5F5"><div style="font-size:11px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Manager comment</div><div style="font-size:12px;color:var(--text-2);font-style:italic;padding:10px 14px;background:#FFF8F8;border-radius:var(--r-sm);border-left:3px solid var(--maroon)">Good progress on the design task. Please prioritise the M&E data fields review — it is blocking the dashboard build. Add output link when shared.</div></div>
+  </div>`};
+}
+
+function vSReq(){
+  const mine=D.requests.filter(r=>r.by==='Software / IT Intern'||r.status==='Draft');
+  return{btns:`<button class="btn maroon" onclick="showModal('addRequest')">+ New Request</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">My Activity Requests</div></div>
+  ${mine.map(r=>`<div class="req-card">
+    <div class="req-hdr"><div><div class="req-title">${r.title}</div><div style="font-size:11px;color:var(--text-2);margin-top:2px">Code: ${r.code}</div></div><span class="badge ${RC[r.status]||'b-gray'}">${r.status}</span></div>
+    <div class="req-meta"><div><div style="color:var(--text-2);font-size:10px">Program</div><div style="font-weight:600">${r.program}</div></div><div><div style="color:var(--text-2);font-size:10px">Amount</div><div style="font-weight:700;color:var(--maroon)">${RWF(r.amount)}</div></div><div><div style="color:var(--text-2);font-size:10px">Date</div><div style="font-weight:600">${r.date}</div></div><div><div style="color:var(--text-2);font-size:10px">Status</div><span class="badge ${RC[r.status]||'b-gray'}">${r.status}</span></div></div>
+    <div style="padding:8px 12px;background:var(--gray-light);border-radius:var(--r-sm);font-size:12px;margin-bottom:10px">
+      <b>Approval flow:</b>
+      ${['Draft','Submitted','Approved','Paid'].map((s,i)=>`<span style="color:${r.status===s?'var(--maroon)':'#94A3B8'};font-weight:${r.status===s?700:400}"> ${i>0?'→ ':''}${s}</span>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px">
+      ${r.status==='Draft'?`<button class="btn blue sm" onclick="cRS(${r.id},'Submitted');toast('Submitted for approval!')">Submit for Approval</button>`:''}
+      ${r.status==='Paid'?`<button class="btn sm ghost-maroon" onclick="toast('Upload window opens!')">Upload Evidence</button>`:''}
+    </div>
+  </div>`).join('')}`};
+}
+
+// ════════════════════════════════════════════
+// FINANCE VIEWS
+// ════════════════════════════════════════════
+function vFDash(){
+  const tb=D.projects.reduce((a,p)=>a+p.budget,0);
+  const ts=D.projects.reduce((a,p)=>a+p.spent,0);
+  return{btns:`<button class="btn gp" onclick="toast('Finance report exported!')">Export Report</button>`,html:`
+  <div class="banner" style="background:linear-gradient(135deg,#3D0000,#8B0000)">
+    <div><div class="banner-title">Finance Dashboard 💰</div><div class="banner-sub">Budget tracking · Payment approvals · Disbursement records</div></div>
+    <button class="btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.25);color:#fff" onclick="toast('Finance summary generated!')">Export Summary</button>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Finance Department Areas</div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <button class="btn gp" onclick="go('f-req')">Smart Requisitions</button>
+      <button class="btn gp" onclick="go('f-bud')">Budget / Procurement</button>
+      <button class="btn gp" onclick="go('f-pay')">Payments</button>
+      <button class="btn gp" onclick="go('f-bud')">Cash Advances & Audit</button>
+    </div>
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card sc-amber"><div class="stat-val" style="font-size:18px">${RWF(tb)}</div><div class="stat-label">Total Budget</div></div>
+    <div class="stat-card sc-green"><div class="stat-val" style="font-size:18px">${RWF(ts)}</div><div class="stat-label">Disbursed</div><div class="stat-sub">${Math.round(ts/tb*100)}% utilised</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val" style="font-size:18px">${RWF(tb-ts)}</div><div class="stat-label">Remaining</div></div>
+    <div class="stat-card sc-maroon"><div class="stat-val">${D.requests.filter(r=>r.status==='Submitted').length}</div><div class="stat-label">Awaiting Review</div></div>
+  </div>
+  ${renderFinanceChannel()}
+  <div class="grid2">
+    <div class="panel"><div class="panel-hdr">Budget utilisation by project</div>
+    ${D.projects.map(p=>{const pc=p.budget>0?Math.round(p.spent/p.budget*100):0;return`<div class="bb-row"><div class="bb-label">${p.name}</div><div class="bb-track"><div class="bb-fill" style="width:${pc}%;background:${p.color}"></div></div><div class="bb-pct" style="color:${p.color}">${pc}%</div></div>`;}).join('')}</div>
+    <div class="panel"><div class="panel-hdr">Requests awaiting review <span class="badge">${D.requests.filter(r=>r.status==='Submitted').length}</span></div>
+    ${D.requests.filter(r=>r.status==='Submitted').map(r=>`<div class="dl-row"><div><div style="font-weight:600;font-size:13px">${r.title}</div><div style="font-size:11px;color:var(--text-2)">${r.program} · ${r.by}</div></div><div style="display:flex;gap:6px;align-items:center"><span style="font-weight:700;color:var(--maroon)">${RWF(r.amount)}</span><button class="btn sm maroon" onclick="fApprove(${r.id})">Review</button></div></div>`).join('')||'<div style="padding:12px 16px;font-size:12px;color:var(--text-2)">No pending requests</div>'}
+    </div>
+  </div>`};
+}
+
+function vFReq(){
+  return{btns:'',html:`
+  <div class="sec-hdr"><div class="sec-title">Activity Requests — Finance Review</div></div>
+  ${renderDeptMap()}
+  ${renderFinanceChannel()}
+  ${D.requests.map(r=>`<div class="req-card">
+    <div class="req-hdr"><div><div class="req-title">${r.title}</div><div style="font-size:11px;color:var(--text-2);margin-top:2px">Code: ${r.code} · ${r.by} · ${r.date}</div></div><span class="badge ${RC[r.status]||'b-gray'}">${r.status}</span></div>
+    <div class="req-meta"><div><div style="color:var(--text-2);font-size:10px">Program</div><div style="font-weight:600">${r.program}</div></div><div><div style="color:var(--text-2);font-size:10px">Amount</div><div style="font-weight:700;font-size:15px;color:var(--maroon)">${RWF(r.amount)}</div></div><div><div style="color:var(--text-2);font-size:10px">Budget check</div><div style="font-weight:600;color:#059669">✓ Funds available</div></div><div><div style="color:var(--text-2);font-size:10px">Date</div><div style="font-weight:600">${r.date}</div></div></div>
+    ${renderRequestDetails(r)}
+    ${renderGoldenRule(r)}
+    ${renderWorkflow(r)}
+    ${renderRequestComments(r)}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${r.status==='Submitted'?`<button class="btn gp sm" onclick="fApprove(${r.id})">✓ Approve & Forward to ED</button><button class="btn danger sm" onclick="toast('Returned with comment.')">Return</button><button class="btn sm" onclick="openRequestBudget(${r.id})">View Budget Details</button>`:''}
+      ${r.status==='Approved'?`<button class="btn sm" style="background:#D97706;border-color:#D97706;color:#fff" onclick="go('f-pay')">Process Payment →</button>`:''}
+      ${r.status==='Paid'?`<span class="badge b-green" style="align-self:center">Payment complete ✓</span>`:''}
+      ${r.status==='Draft'?`<span style="font-size:12px;color:var(--text-2)">Awaiting submission from program officer</span>`:''}
+    </div>
+  </div>`).join('')}`};
+}
+
+function vFPay(){
+  const transportReq=D.requests.find(r=>r.code==='REQ-ACT-002')||D.requests[1];
+  const listTotal=D.participants.reduce((sum,p)=>sum+(p.amount||0),0);
+  return{btns:`<button class="btn gp" onclick="markAllPaid()">Mark All Paid</button><button class="btn" onclick="toast('Payment report exported!')">Export Report</button>`,html:`
+  <div class="sec-hdr"><div class="sec-title">Attendance & Payment List</div></div>
+  <div class="panel">
+    <div class="panel-hdr">${transportReq.title} (${transportReq.code}) <span class="badge b-green">${transportReq.status}</span></div>
+    <div style="padding:10px 16px;background:var(--gray-light);border-bottom:1px solid var(--gray-border);font-size:12px;display:flex;gap:20px;flex-wrap:wrap">
+      <span>Request details: <b>${transportReq.details}</b></span>
+      <span>Project code: <b>${transportReq.projectCode}</b></span>
+      <span>Budget line: <b>${transportReq.budgetLine}</b></span>
+      <span>Items: <b>${transportReq.items}</b></span>
+      <span>Date: <b>${transportReq.date}</b></span>
+      <span>Approved request: <b style="color:var(--maroon)">${RWF(transportReq.amount)}</b></span>
+      <span>Payment list total: <b style="color:#059669">${RWF(listTotal)}</b></span>
+      <span>Method: <b>Mobile Money</b></span>
+    </div>
+    <table class="tbl" id="pay-tbl">
+      <thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>Profession</th><th>Amount (RWF)</th><th>MoMo Ref</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>${partRows()}</tbody>
+    </table>
+    <div style="padding:10px 16px;border-top:1px solid #F5F5F5;display:flex;gap:8px"><button class="btn sm ghost-maroon" onclick="toast('Participant row added!')">+ Add Participant</button></div>
+  </div>
+  <div style="padding:12px 16px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:var(--r-sm);font-size:12px;color:#92400E">⚠ Verify total payment list matches approved request amount before processing.</div>`};
+}
+
+function partRows(){
+  const rows=D.participants.map((p,i)=>`<tr id="pr-${i}"><td class="muted">${p.no}</td><td class="bold">${p.name}</td><td class="muted">${p.mobile}</td><td class="muted">${p.role}</td><td style="font-weight:700;color:var(--maroon)">${RWF(p.amount)}</td><td class="muted">${p.paid?'MM-2026-'+String(i+1).padStart(3,'0'):'—'}</td><td><span class="badge ${p.paid?'b-green':'b-amber'}">${p.paid?'Paid':'Pending'}</span></td><td>${p.paid?'<span style="font-size:11px;color:#059669">✓ Done</span>':`<button class="btn sm gp" onclick="payPart(${i})">Pay</button>`}</td></tr>`).join('');
+  const total=D.participants.reduce((sum,p)=>sum+(p.amount||0),0);
+  return rows+`<tr style="background:#FFF8F8"><td colspan="4" class="bold" style="text-align:right">Total</td><td style="font-weight:900;color:var(--maroon)">${RWF(total)}</td><td colspan="3" class="muted">Payment list total for this transport/facilitation request</td></tr>`;
+}
+
+function vFBud(){
+  const tb=D.budgets.reduce((a,b)=>a+b.approved,0),ts=D.budgets.reduce((a,b)=>a+b.actual,0),tf=D.budgets.reduce((a,b)=>a+b.forecast,0),rem=D.budgets.reduce((a,b)=>a+b.remaining,0);
+  return{btns:`<button class="btn gp" onclick="toast('Budget form opened!')">+ Budget</button><button class="btn ghost-maroon" onclick="toast('Budget adjustment form opened!')">+ Adjustment</button><button class="btn maroon" onclick="toast('Budget report exported!')">Export Report</button>`,html:`
+  <div class="stat-grid">
+    <div class="stat-card sc-amber"><div class="stat-val" style="font-size:20px">${RWF(tb)}</div><div class="stat-label">Approved Budget</div><div class="stat-sub">all project lines</div></div>
+    <div class="stat-card sc-green"><div class="stat-val" style="font-size:20px">${RWF(ts)}</div><div class="stat-label">Actual Expenditure</div><div class="stat-sub">auto-updated from payments</div></div>
+    <div class="stat-card sc-blue"><div class="stat-val" style="font-size:20px">${RWF(rem)}</div><div class="stat-label">Remaining Balance</div><div class="stat-sub">available funds</div></div>
+    <div class="stat-card sc-maroon"><div class="stat-val" style="font-size:20px">${RWF(tf)}</div><div class="stat-label">Forecasted Spend</div><div class="stat-sub">planned expenditure</div></div>
+  </div>
+  <div class="panel" style="margin-bottom:14px">
+    <div class="panel-hdr">Budget Preparation, Monitoring & Forecasting</div>
+    <table class="tbl"><thead><tr><th>Project</th><th>Donor</th><th>Budget period</th><th>Category</th><th>Budget line</th><th>Approved</th><th>Actual</th><th>Remaining</th><th>Forecast</th><th>Adjustment / revision</th><th>Alert</th></tr></thead>
+    <tbody>${D.budgets.map(b=>{const u=b.approved?Math.round(b.actual/b.approved*100):0;return`<tr><td class="bold">${b.project}</td><td class="muted">${b.donor}</td><td class="muted">${b.period}</td><td>${b.category}</td><td class="muted">${b.line}</td><td class="bold">${RWF(b.approved)}</td><td style="font-weight:700;color:var(--maroon)">${RWF(b.actual)}</td><td style="font-weight:700;color:#059669">${RWF(b.remaining)}</td><td>${RWF(b.forecast)}</td><td class="muted">${b.adjustment}</td><td><span class="badge ${u>90?'b-red':u>70?'b-amber':'b-green'}">${b.alert}</span></td></tr>`;}).join('')}</tbody></table>
+  </div>
+  <div class="grid3">
+    ${[
+      {t:'Automatic Budget Check',d:'Every requisition checks project, donor, and budget line before approval can continue.',c:'#8B0000'},
+      {t:'Utilisation Alerts',d:'Finance receives alerts when actual or forecasted spending approaches approved limits.',c:'#D97706'},
+      {t:'Adjustments / Revisions',d:'Budget changes keep a reason, approval note, old value, new value, and audit trail.',c:'#1D4ED8'},
+    ].map(x=>`<div class="panel"><div class="panel-hdr" style="background:${x.c}">${x.t}</div><div style="padding:14px;font-size:12px;color:var(--text-2);line-height:1.6">${x.d}</div></div>`).join('')}
+  </div>
+  <div class="stat-grid">
+    <div class="stat-card sc-gray"><div class="stat-val">${Math.round(ts/tb*100)}%</div><div class="stat-label">Current Utilisation</div></div>
+    <div class="stat-card sc-gray"><div class="stat-val">${D.budgets.length}</div><div class="stat-label">Budget Lines</div></div>
+    <div class="stat-card sc-gray"><div class="stat-val">${D.budgets.filter(b=>b.adjustment!=='No adjustment').length}</div><div class="stat-label">Revisions / Adjustments</div></div>
+    <div class="stat-card sc-gray"><div class="stat-val">${D.budgets.filter(b=>b.alert!=='Healthy'&&b.alert!=='Within budget').length}</div><div class="stat-label">Watch Alerts</div></div>
+  </div>
+  <div class="panel"><div class="panel-hdr">Budget by Project</div>
+  <table class="tbl"><thead><tr><th>Project</th><th>Program</th><th>Budget</th><th>Spent</th><th>Remaining</th><th>Utilisation</th><th>Status</th></tr></thead>
+  <tbody>${D.projects.map(p=>{const pc=p.budget>0?Math.round(p.spent/p.budget*100):0,pre=p.budget-p.spent,sc=p.status==='Active'?'b-green':'b-amber';return`<tr><td class="bold">${p.name}</td><td class="muted">${p.program}</td><td class="bold">${RWF(p.budget)}</td><td style="color:var(--maroon);font-weight:600">${RWF(p.spent)}</td><td style="color:#059669;font-weight:600">${RWF(pre)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="width:80px;background:#F1F5F9;border-radius:20px;height:6px;overflow:hidden"><div style="width:${pc}%;height:100%;background:${pc>90?'#DC2626':pc>70?'#D97706':'#059669'};border-radius:20px"></div></div><span style="font-weight:700;font-size:11px;color:${pc>90?'#DC2626':pc>70?'#D97706':'#059669'}">${pc}%</span></div></td><td><span class="badge ${sc}">${p.status}</span></td></tr>`;}).join('')}</tbody>
+  </table></div>
+  ${vProcurement().html}
+  ${vCashAdvances().html}
+  ${vAuditTrail().html}`};
+}
+
+// ════════════════════════════════════════════
+// MODAL SYSTEM
+// ════════════════════════════════════════════
+function showModal(type,taskId,projectId){
+  const teamOpts=D.team.map(m=>`<option>${m.name}</option>`).join('');
+  const teamList=`<datalist id="team-options"><option value="(Unassigned)">${teamOpts}</datalist>`;
+  const contextProject=projectId?D.projects.find(p=>p.id===projectId):null;
+  const projOpts=D.projects.map(p=>`<option value="${p.name}">`).join('');
+  const projectField=contextProject
+    ?`<div class="form-group"><label class="form-label">Project *</label><input class="form-input" value="${contextProject.name}" disabled><input type="hidden" id="t-proj" value="${contextProject.id}"><div style="font-size:11px;color:var(--green-dark);margin-top:5px;font-weight:700">This task will be created under this project.</div></div>`
+    :`<div class="form-group"><label class="form-label">Project *</label><input class="form-input" id="t-proj" list="project-options" placeholder="Type or choose project"><datalist id="project-options">${projOpts}</datalist><div style="font-size:11px;color:var(--text-3);margin-top:5px">Every task must belong to a project. Typing a new project creates a draft project.</div></div>`;
+  const swatches=COLORS_PROJ.map(c=>`<div class="color-swatch ${PROJ_COLOR===c?'sel':''}" style="background:${c}" onclick="setProjColor('${c}',this)"></div>`).join('');
+  const modals={
+    addTask:`<div class="modal-head"><div class="modal-head-title">+ Assign New Task</div><button class="btn ghost" style="color:#fff;padding:4px 8px" onclick="closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Task title *</label><input class="form-input" id="t-title" placeholder="e.g. Design participant registration form"></div>
+        <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" id="t-desc" rows="2" placeholder="What needs to be done? What is the expected output?"></textarea></div>
+        <div class="form-row">
+          ${projectField}
+          <div class="form-group"><label class="form-label">Assign to</label><input class="form-input" id="t-assign" list="team-options" placeholder="Type or choose user">${teamList}<div style="font-size:11px;color:var(--text-3);margin-top:5px">Typing a new name adds that user to the team.</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Department / program area</label><input class="form-input" id="t-dept" placeholder="Auto-filled from project if left blank"></div>
+          <div class="form-group"><label class="form-label">Activity</label><input class="form-input" id="t-activity" placeholder="e.g. Dashboard setup"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Budget line</label><input class="form-input" id="t-budget-line" placeholder="e.g. Digital systems"></div>
+          <div class="form-group"><label class="form-label">Responsible title</label><input class="form-input" id="t-title-role" list="team-options" placeholder="Type or choose responsible title"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Expected output / deliverable</label><input class="form-input" id="t-output" placeholder="e.g. Form prototype completed"></div>
+          <div class="form-group"><label class="form-label">Supporting document or link</label><input class="form-input" id="t-doc" placeholder="Paste link or document name"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Inputs</label><input class="form-input" id="t-inputs" placeholder="e.g. Data, training materials, staff time"></div>
+          <div class="form-group"><label class="form-label">Means of verification</label><input class="form-input" id="t-mov" placeholder="e.g. Attendance list, report, photos"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Indicators</label><input class="form-input" id="t-indicators" placeholder="e.g. # participants reached, output completed"></div>
+          <div class="form-group"><label class="form-label">M&E attachments</label><input class="form-input" id="t-attachments" placeholder="e.g. Survey results, documentary evidence"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Supervisor / reviewer</label><input class="form-input" id="t-supervisor" list="team-options" placeholder="Type or choose reviewer"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Priority</label><select class="form-input" id="t-pri"><option>High</option><option>Medium</option><option>Low</option></select></div>
+          <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="t-status"><option>Not Started</option><option>In Progress</option><option>Review</option><option>Done</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Start date</label><input class="form-input" type="date" id="t-start"></div>
+          <div class="form-group"><label class="form-label">End / Due date</label><input class="form-input" type="date" id="t-due"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Remarks / challenges / comments</label><textarea class="form-input" id="t-comments" rows="2" placeholder="Remarks, challenges, manager comments, or review notes"></textarea></div>
+        </div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn gp" onclick="addTask()">Save Task</button></div>`,
+
+    assignTask:buildAssignModal(taskId),
+
+    addRequest:`<div class="modal-head"><div class="modal-head-title">New Activity Request</div><button class="btn ghost" style="color:#fff;padding:4px 8px" onclick="closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Date of requesting *</label><input class="form-input" type="date" id="r-date"></div>
+          <div class="form-group"><label class="form-label">Particular activity *</label><input class="form-input" id="r-title" placeholder="e.g. Training facilitation request"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Project code</label><input class="form-input" id="r-project-code" placeholder="e.g. PRJ-ACT-002"></div>
+          <div class="form-group"><label class="form-label">Item(s)</label><input class="form-input" id="r-items" placeholder="e.g. Transport and facilitation fees"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Budget line</label><input class="form-input" id="r-budget-line" placeholder="e.g. Project activities"></div>
+          <div class="form-group"><label class="form-label">Total amount (RWF)</label><input class="form-input" type="number" placeholder="320000" id="r-amount"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Requesting title / department</label><input class="form-input" id="r-by" list="team-options" placeholder="Type or choose requesting title / department">${teamList}<div style="font-size:11px;color:var(--text-3);margin-top:5px">You can type a new title or department if it is not listed.</div></div>
+        <div class="form-group"><label class="form-label">Details</label><textarea class="form-input" id="r-details" rows="2" placeholder="Describe the request and its purpose..."></textarea></div>
+        <div class="form-group"><label class="form-label">Attach document</label><div class="upload-zone" onclick="fakeUpload('req-doc')" id="req-doc-zone">📎 Click to attach budget breakdown, activity plan, or supporting document</div></div>
+      </div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Save Draft</button><button class="btn blue" onclick="submitRequest()">Submit for Approval</button></div>`,
+
+    addAdminOp:`<div class="modal-head"><div class="modal-head-title">Create Admin Operation</div><button class="btn ghost" style="color:#fff;padding:4px 8px" onclick="closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Operation name *</label><input class="form-input" id="a-name" placeholder="e.g. Office internet subscription"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Amount (RWF)</label><input class="form-input" type="number" id="a-amount" placeholder="85000"></div>
+          <div class="form-group"><label class="form-label">Responsible person / title</label><input class="form-input" id="a-responsible" list="team-options" placeholder="Type or choose responsible person">${teamList}</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Timeline / due date</label><input class="form-input" id="a-timeline" placeholder="e.g. 25th of each month"></div>
+          <div class="form-group"><label class="form-label">Payment method</label><input class="form-input" id="a-method" list="admin-pay-options" placeholder="Type or choose payment method"><datalist id="admin-pay-options"><option value="Bank transfer"><option value="Cheque"><option value="Mobile money"><option value="Card / transfer"></datalist></div>
+        </div>
+        <div class="form-group"><label class="form-label">Remarks</label><textarea class="form-input" id="a-remarks" rows="2" placeholder="Rent, taxes, monthly subscription, vendor payment, payroll support..."></textarea></div>
+        <div style="padding:10px 12px;background:var(--green-light);border-radius:var(--r-sm);font-size:12px;color:var(--green-dark)">After creating it, use "Send to Finance Request" in the Monthly Operations table.</div>
+      </div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn gp" onclick="addAdminOperation()">Create Operation</button></div>`,
+
+    addUser:`<div class="modal-head"><div class="modal-head-title">+ Add New User</div><button class="btn ghost" style="color:#fff;padding:4px 8px" onclick="closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Display name / title *</label><input class="form-input" id="u-name" placeholder="e.g. Communications Officer"></div>
+          <div class="form-group"><label class="form-label">Position *</label><input class="form-input" id="u-role" placeholder="e.g. Communications Officer"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Department</label><input class="form-input" id="u-dept" list="dept-options" placeholder="Type or choose department"><datalist id="dept-options"><option value="Digital Innovation"><option value="Programs"><option value="Finance"><option value="M&E"><option value="Operations"><option value="Administration"></datalist></div>
+          <div class="form-group"><label class="form-label">System role</label><input class="form-input" id="u-access" list="access-options" placeholder="Type or choose system role"><datalist id="access-options"><option value="Employee"><option value="Manager"><option value="Finance Officer"><option value="Admin"><option value="Viewer"></datalist></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="u-email" type="email" placeholder="user@mdfc.rw"></div>
+          <div class="form-group"><label class="form-label">Initials</label><input class="form-input" id="u-av" maxlength="3" placeholder="CO"></div>
+        </div>
+        <div style="padding:10px 12px;background:var(--green-light);border-radius:var(--r-sm);font-size:12px;color:var(--green-dark)">The new user will appear in Team Overview and task assignment dropdowns.</div>
+      </div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn gp" onclick="addUser()">Add User</button></div>`,
+
+    addProject:`<div class="modal-head"><div class="modal-head-title">Create New Project</div><button class="btn ghost" style="color:#fff;padding:4px 8px" onclick="closeModal()">✕</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label class="form-label">Project name *</label><input class="form-input" id="p-name" placeholder="e.g. Community Outreach Tool"></div>
+        <div class="form-group"><label class="form-label">Project description *</label><textarea class="form-input" id="p-desc" rows="3" placeholder="Describe the project goal, scope, and expected outcomes..."></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Project code</label><input class="form-input" id="p-code" placeholder="e.g. PRJ-DIG-005"></div>
+          <div class="form-group"><label class="form-label">Budget (RWF)</label><input class="form-input" type="number" id="p-budget" placeholder="1200000"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Application / proposal work plan</label><textarea class="form-input" id="p-workplan" rows="3" placeholder="Summarise the approved work plan, main phases, or proposal plan..."></textarea></div>
+        <div class="form-group"><label class="form-label">Detailed budget</label><textarea class="form-input" id="p-detailed-budget" rows="2" placeholder="List budget categories, amounts, and notes..."></textarea></div>
+        <div class="form-group"><label class="form-label">Results / objectives</label><textarea class="form-input" id="p-objectives" rows="2" placeholder="Expected results, objectives, or measurable outcomes..."></textarea></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Status</label><select class="form-input" id="p-status"><option>Active</option><option>Planning</option><option>On Hold</option></select></div>
+          <div class="form-group"><label class="form-label">Start date</label><input class="form-input" type="date" id="p-start"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">End / Due date</label><input class="form-input" type="date" id="p-due"></div>
+          <div class="form-group"><label class="form-label">Responsible title</label><input class="form-input" id="p-owner" list="team-options" placeholder="Type or choose responsible title">${teamList}</div>
+        </div>
+        <div class="form-group"><label class="form-label">Project colour</label><div class="color-picker-wrap" id="color-swatches">${swatches}</div></div>
+        <div class="form-group"><label class="form-label">Upload project document</label><div class="upload-zone" onclick="fakeUpload('proj-doc')" id="proj-doc-zone">📁 Click to upload project brief, proposal, or supporting document<br><small style="color:var(--text-3)">PDF, DOCX, XLSX · max 10MB</small></div></div>
+      </div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn ghost-maroon" onclick="addProject(true)">Create Project & Activities</button><button class="btn gp" onclick="addProject()">Create Project</button></div>`,
+  };
+  if(modals[type]){
+    document.getElementById('modal-box').innerHTML=modals[type];
+    document.getElementById('overlay').style.display='flex';
+    if(type==='addRequest'){
+      const dateInput=document.getElementById('r-date');
+      if(dateInput)dateInput.value=new Date().toISOString().slice(0,10);
+    }
+    bindDemoInteractions();
+  }
+}
+
+function buildAssignModal(taskId){
+  const task=D.tasks.find(t=>t.id===taskId);
+  if(!task)return'<div style="padding:20px">Task not found</div>';
+  return`<div class="modal-head"><div class="modal-head-title">Assign Task</div><button class="btn ghost" style="color:#fff;padding:4px 8px" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div style="padding:10px 14px;background:var(--gray-light);border-radius:var(--r-sm);margin-bottom:14px">
+      <div style="font-weight:700;font-size:13px">${task.title}</div>
+      <div style="font-size:11px;color:var(--text-2);margin-top:2px">Currently assigned to: <b>${task.assign||'(Unassigned)'}</b></div>
+    </div>
+    <div class="form-group"><label class="form-label">Select new assignee</label>
+      <div class="assign-panel">
+        <div class="assign-member-row ${!task.assign||task.assign==='(Unassigned)'?'assigned':''}" onclick="quickAssign(${taskId},'(Unassigned)')">
+          <div class="avatar" style="background:#94A3B8;width:28px;height:28px;font-size:10px">—</div>
+          <div style="font-weight:500;font-size:13px">Leave unassigned</div>
+          <div style="margin-left:auto;font-size:11px;color:var(--text-2)">Open for self-assign</div>
+        </div>
+        ${D.team.map(m=>`<div class="assign-member-row ${task.assign===m.name?'assigned':''}" onclick="quickAssign(${taskId},'${m.name}')">
+          <div class="avatar" style="background:${m.color};width:28px;height:28px;font-size:10px">${m.av}</div>
+          <div><div style="font-weight:600;font-size:13px">${m.name}</div><div style="font-size:11px;color:var(--text-2)">${m.role} · ${m.tasks} tasks</div></div>
+          ${task.assign===m.name?`<div style="margin-left:auto" class="badge b-maroon">Current</div>`:''}
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancel</button></div>`;
+}
+
+function closeModal(){document.getElementById('overlay').style.display='none';}
+function closeOverlay(e){if(e.target.id==='overlay')closeModal();}
+
+function setProjColor(c,el){
+  PROJ_COLOR=c;
+  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function fakeUpload(id){
+  const files=['Project_Brief.pdf','Activity_Plan.docx','Budget_2026.xlsx','Proposal_Final.pdf'];
+  UPLOAD_NAME=files[Math.floor(Math.random()*files.length)];
+  const zone=document.getElementById(id+'-zone');
+  if(zone){zone.innerHTML=`✅ <b>${UPLOAD_NAME}</b> attached successfully`;zone.classList.add('has-file');}
+}
+
+function ensureProject(rawName){
+  const value=(rawName||'').trim();
+  if(!value)return D.projects[0];
+  const byId=D.projects.find(p=>String(p.id)===value);
+  if(byId)return byId;
+  const existing=D.projects.find(p=>p.name.toLowerCase()===value.toLowerCase());
+  if(existing)return existing;
+  const newProject={
+    id:D.nProj++,
+    name:value,
+    program:'Programs',
+    projectCode:'PRJ-DRAFT-'+D.nProj,
+    budgetLine:'Project activities',
+    activity:value,
+    items:'Project resources',
+    desc:'Draft project created while adding a task.',
+    color:COLORS_PROJ[D.projects.length%COLORS_PROJ.length],
+    tasks:0,
+    done:0,
+    budget:0,
+    spent:0,
+    status:'Planning',
+    doc:'',
+    start:'',
+    end:''
+  };
+  D.projects.unshift(newProject);
+  return newProject;
+}
+
+function ensureUser(rawName){
+  const value=(rawName||'').trim();
+  if(!value||value==='(Unassigned)')return value||'(Unassigned)';
+  const existing=D.team.find(m=>m.name.toLowerCase()===value.toLowerCase());
+  if(existing)return existing.name;
+  const av=value.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const color=COLORS_PROJ[D.team.length%COLORS_PROJ.length];
+  D.team.push({name:value,role:value,department:'Programs',access:'Employee',email:'',tasks:0,done:0,color,av});
+  AVC[value]=color;
+  return value;
+}
+function logAudit(action,record,project,donor,budgetLine,docs,status='Logged'){
+  D.audit.unshift({
+    time:new Date().toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    user:ROLES_INFO[ROLE]?.name||'System User',
+    action,
+    record,
+    project,
+    donor,
+    budgetLine,
+    docs,
+    status
+  });
+}
+
+// ════════════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════════════
+function addTask(){
+  const title=document.getElementById('t-title')?.value.trim();
+  if(!title)return;
+  const proj=ensureProject(document.getElementById('t-proj')?.value);
+  const assignee=ensureUser(document.getElementById('t-assign')?.value);
+  const responsible=ensureUser(document.getElementById('t-title-role')?.value||assignee);
+  const supervisor=ensureUser(document.getElementById('t-supervisor')?.value||'Program Manager');
+  const tStart=document.getElementById('t-start')?.value;
+  const tDue=document.getElementById('t-due')?.value;
+  const dateRange=tStart&&tDue?tStart+' → '+tDue:tStart||tDue||'TBD';
+  const status=document.getElementById('t-status').value;
+  D.tasks.push({
+    id:D.nTask++,
+    title,
+    project:proj.id,
+    assign:assignee||'(Unassigned)',
+    priority:document.getElementById('t-pri').value,
+    status,
+    due:dateRange,
+    start:tStart||'',
+    end:tDue||'',
+    program:document.getElementById('t-dept')?.value.trim()||proj.program,
+    desc:document.getElementById('t-desc')?.value||'',
+    activity:document.getElementById('t-activity')?.value.trim()||proj.activity||proj.name,
+    budgetLine:document.getElementById('t-budget-line')?.value.trim()||proj.budgetLine||proj.program,
+    responsibleTitle:responsible||assignee||'(Unassigned)',
+    output:document.getElementById('t-output')?.value.trim()||'',
+    document:document.getElementById('t-doc')?.value.trim()||'',
+    inputs:document.getElementById('t-inputs')?.value.trim()||'',
+    mov:document.getElementById('t-mov')?.value.trim()||'',
+    indicators:document.getElementById('t-indicators')?.value.trim()||'',
+    attachments:document.getElementById('t-attachments')?.value.trim()||'',
+    supervisor:supervisor||'Program Manager',
+    comments:document.getElementById('t-comments')?.value.trim()||'',
+    progress:status==='Done'?100:0
+  });
+  logAudit('Created task',title,proj.name,donorFromRecord({projectCode:proj.projectCode,budgetLine:proj.budgetLine,program:proj.program}),proj.budgetLine||'Project activities',document.getElementById('t-doc')?.value.trim()||'Task record','Logged');
+  proj.tasks=(proj.tasks||0)+1;
+  if(status==='Done')proj.done=(proj.done||0)+1;
+  closeModal();
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  toast('Task created under '+proj.name+'!');
+}
+
+function addUser(){
+  const name=document.getElementById('u-name')?.value.trim();
+  const role=document.getElementById('u-role')?.value.trim();
+  if(!name||!role){toast('Please add name/title and position.');return;}
+  const av=(document.getElementById('u-av')?.value.trim()||name.split(' ').map(w=>w[0]).join('').slice(0,2)).toUpperCase();
+  const color=COLORS_PROJ[D.team.length%COLORS_PROJ.length];
+  const user={name,role,department:document.getElementById('u-dept')?.value||'Programs',access:document.getElementById('u-access')?.value||'Employee',email:document.getElementById('u-email')?.value.trim()||'',tasks:0,done:0,color,av};
+  D.team.push(user);
+  AVC[name]=color;
+  logAudit('Added user',name,'User management','Internal','Administration / HR','User profile','Logged');
+  closeModal();
+  go('m-team');
+  toast(name+' added and available for task assignment.');
+}
+
+function addAdminOperation(){
+  const name=document.getElementById('a-name')?.value.trim();
+  if(!name){toast('Please add the operation name.');return;}
+  D.adminOps.push({
+    name,
+    amount:parseInt(document.getElementById('a-amount')?.value)||0,
+    responsible:document.getElementById('a-responsible')?.value.trim()||'Administration',
+    timeline:document.getElementById('a-timeline')?.value.trim()||'Monthly',
+    remarks:document.getElementById('a-remarks')?.value.trim()||'Administrative operation',
+    method:document.getElementById('a-method')?.value.trim()||'Bank transfer',
+    financeRequestId:null
+  });
+  logAudit('Created admin operation',name,'Administration','Core / project donor','Administration operations','Admin operation record','Logged');
+  closeModal();
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  toast('Admin operation created. It can now be sent to Finance.');
+}
+
+function addProject(createActivities=false){
+  const name=document.getElementById('p-name')?.value.trim();
+  const desc=document.getElementById('p-desc')?.value.trim();
+  if(!name||!desc){toast('Please fill in project name and description.');return;}
+  const pStart=document.getElementById('p-start')?.value;
+  const pEnd=document.getElementById('p-due')?.value;
+  const project={id:D.nProj++,name,program:'Project',projectCode:document.getElementById('p-code')?.value.trim()||'PRJ-NEW',budgetLine:'Detailed budget',activity:'Project activities',items:'Project activities',workPlan:document.getElementById('p-workplan')?.value.trim()||'Proposal work plan pending',detailedBudget:document.getElementById('p-detailed-budget')?.value.trim()||'',objectives:document.getElementById('p-objectives')?.value.trim()||'',owner:document.getElementById('p-owner')?.value||'Program Manager',desc,color:PROJ_COLOR,tasks:0,done:0,budget:parseInt(document.getElementById('p-budget')?.value)||0,spent:0,status:document.getElementById('p-status')?.value||'Planning',doc:UPLOAD_NAME||'',start:pStart||'',end:pEnd||''};
+  D.projects.push(project);
+  logAudit('Created project',project.projectCode,project.name,'Project donor',project.budgetLine,project.doc||'Project setup record','Logged');
+  UPLOAD_NAME='';PROJ_COLOR='#8B0000';
+  closeModal();
+  if(createActivities){
+    go('m-proj');
+    showModal('addTask',null,project.id);
+    toast('Project "'+name+'" created. Add its first activity now.');
+  }else{
+    go('m-proj');
+    toast('Project "'+name+'" created successfully!');
+  }
+}
+
+function submitRequest(){
+  const title=document.getElementById('r-title')?.value.trim();
+  if(!title)return;
+  const by=document.getElementById('r-by')?.value||ROLES_INFO[ROLE].name;
+  const program='Activity Request';
+  const amount=parseInt(document.getElementById('r-amount')?.value)||0;
+  const projectCode=document.getElementById('r-project-code')?.value.trim()||'MDFC-NEW';
+  const budgetLine=document.getElementById('r-budget-line')?.value.trim()||program;
+  const items=document.getElementById('r-items')?.value.trim()||'Activity costs';
+  const details=document.getElementById('r-details')?.value.trim()||title;
+  const date=requestDateLabel(document.getElementById('r-date')?.value);
+  const req={id:D.nReq++,title,program,by,amount,date,status:'Submitted',code:projectCode+'/REQ-2026-'+D.nReq,projectCode,budgetLine,activity:title,items,details,docs:UPLOAD_NAME||'Supporting document pending'};
+  req.workflow=defaultWorkflow(req);
+  req.workflow.prepared={...req.workflow.prepared,officer:by,position:by,comments:'Request submitted with department/title details.',status:'Ready for Verification'};
+  req.workflow.verified={...req.workflow.verified,status:'Ready for Executive Approval'};
+  D.requests.push(req);
+  logAudit('Created requisition',req.code,req.title,donorFromRecord(req),req.budgetLine,req.docs,'Logged');
+  UPLOAD_NAME='';
+  closeModal();
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  buildNav();
+  toast('Request submitted for approval!');
+}
+
+function sendAdminToFinance(index){
+  const op=D.adminOps[index];
+  if(!op){toast('Operation not found.');return;}
+  if(op.financeRequestId){
+    toast('This operation is already linked to a finance request.');
+    go(rolePage('requests'));
+    return;
+  }
+  const reqId=D.nReq++;
+  const today=new Date().toISOString().slice(0,10);
+  const req={
+    id:reqId,
+    title:op.name+' payment request',
+    program:'Administration',
+    by:op.responsible||'Administration',
+    amount:op.amount||0,
+    date:requestDateLabel(today),
+    status:'Submitted',
+    code:'ADM/REQ-2026-'+reqId,
+    projectCode:'ADM-OPS',
+    budgetLine:'Administration operations',
+    activity:op.name,
+    items:op.name,
+    details:`Administrative operation: ${op.name}. Timeline: ${op.timeline}. Payment method: ${op.method}. Remarks: ${op.remarks||'None'}.`,
+    docs:'Admin operation record',
+    source:'Administration',
+    adminOperation:op.name
+  };
+  req.workflow=defaultWorkflow(req);
+  req.workflow.prepared={...req.workflow.prepared,dept:'Administration',officer:op.responsible||'Administration',position:op.responsible||'Administration',comments:'Created from Administration monthly operations and submitted to Finance.',status:'Ready for Verification'};
+  req.workflow.verified={...req.workflow.verified,status:'Waiting',comments:'Finance to verify budget availability and supporting documents.'};
+  D.requests.push(req);
+  op.financeRequestId=reqId;
+  logAudit('Sent admin operation to finance',req.code,req.title,donorFromRecord(req),req.budgetLine,req.docs,'Logged');
+  buildNav();
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  toast('Admin operation sent to Finance Request.');
+}
+
+function approveReq(id){
+  const r=D.requests.find(x=>x.id===id);
+  if(r){r.status='Approved';logAudit('Manager approved request',r.code,r.title,donorFromRecord(r),r.budgetLine,r.docs,'Logged');}
+  buildNav();
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  toast('Request approved! Forwarded to Finance.');
+}
+
+function directorApprove(id){
+  const r=D.requests.find(x=>x.id===id);
+  if(r){
+    r.status='Approved';
+    r.workflow=defaultWorkflow(r);
+    r.workflow.executive={...r.workflow.executive,officer:'Executive Director',position:'Executive Director',comments:'Approved for implementation and finance processing.',recommendations:'Finance to proceed after document check.',status:'Approved'};
+    r.workflow.board={...r.workflow.board,status:'Pending'};
+    logAudit('Executive approval recorded',r.code,r.title,donorFromRecord(r),r.budgetLine,r.docs,'Logged');
+  }
+  buildNav();
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  toast('Executive approval recorded.');
+}
+
+function fApprove(id){
+  const r=D.requests.find(x=>x.id===id);
+  if(r){r.status='Approved';logAudit('Finance verified budget availability',r.code,r.title,donorFromRecord(r),r.budgetLine,r.docs,'Logged');}
+  buildNav();go('f-req');
+  toast('Approved & forwarded to Executive Director!');
+}
+
+function cRS(id,st){
+  const r=D.requests.find(x=>x.id===id);
+  if(r)r.status=st;
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+}
+
+function selfAssign(taskId){
+  const t=D.tasks.find(x=>x.id===taskId);
+  const me=ROLES_INFO[ROLE].name;
+  if(t){t.assign=me;const m=D.team.find(tm=>tm.name===me);if(m)m.tasks++;}
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  toast('Task assigned to you!');
+}
+
+function quickAssign(taskId,name){
+  const t=D.tasks.find(x=>x.id===taskId);
+  if(t)t.assign=name;
+  closeModal();
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+  toast(name==='(Unassigned)'?'Task is now open for self-assign!':'Task assigned to '+name+'!');
+}
+
+function payPart(i){
+  D.participants[i].paid=true;
+  const tbody=document.querySelector('#pay-tbl tbody');
+  if(tbody)tbody.innerHTML=partRows();
+  logAudit('Recorded participant payment','PAY-LIST-'+(i+1),'Partner event coordination','Health partner','Project activities','Payment list','Logged');
+  toast(D.participants[i].name+' — payment recorded!');
+}
+
+function markAllPaid(){
+  D.participants.forEach(p=>p.paid=true);
+  logAudit('Recorded payment batch','PAY-BATCH-001','Partner event coordination','Health partner','Project activities','Payment list','Archived');
+  go('f-pay');
+  toast('All payments processed and recorded!');
+}
+
+function setKF(f,el){
+  D.kFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  el?.classList.add('active');
+  go('m-tasks');
+}
+function setRF(f,el){
+  D.rFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  el?.classList.add('active');
+  const cur=NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'));
+  if(cur)go(cur.id);
+}
+
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const el=document.createElement('div');
+  el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2800);
+}
+
+function activeViewId(){
+  return NAVS[ROLE].find(n=>document.getElementById('nav-'+n.id)?.classList.contains('active'))?.id||'';
+}
+function rolePage(kind){
+  const map={
+    director:{projects:'d-projects',tasks:'d-projects',requests:'d-approvals',finance:'d-finance',reports:'d-reports',team:'d-projects'},
+    manager:{projects:'m-proj',tasks:'m-tasks',requests:'m-req',finance:'m-proj',reports:'m-rep',team:'m-team'},
+    staff:{projects:'s-tasks',tasks:'s-tasks',requests:'s-req',finance:'s-req',reports:'s-log',team:'s-dash'},
+    finance:{projects:'f-bud',tasks:'f-req',requests:'f-req',finance:'f-bud',reports:'f-rep',team:'f-dash'}
+  };
+  return map[ROLE]?.[kind]||NAVS[ROLE][0].id;
+}
+function makeClickable(el,handler,label='Open'){
+  if(!el||el.dataset.boundClick)return;
+  el.dataset.boundClick='1';
+  el.style.cursor='pointer';
+  el.setAttribute('role','button');
+  el.setAttribute('tabindex','0');
+  el.setAttribute('title',label);
+  el.addEventListener('click',e=>{
+    if(e.target.closest('button,a,input,select,textarea,.filter-btn,.color-swatch,.upload-zone'))return;
+    handler(e);
+  });
+  el.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){
+      e.preventDefault();
+      handler(e);
+    }
+  });
+}
+function bindDemoInteractions(){
+  document.querySelectorAll('.stat-card').forEach(card=>{
+    makeClickable(card,()=>{
+      const txt=card.innerText.toLowerCase();
+      if(txt.includes('approval')||txt.includes('request')||txt.includes('awaiting'))go(rolePage('requests'));
+      else if(txt.includes('budget')||txt.includes('spent')||txt.includes('remaining')||txt.includes('disbursed')||txt.includes('utilisation')||txt.includes('paid'))go(rolePage('finance'));
+      else if(txt.includes('project'))go(rolePage('projects'));
+      else if(txt.includes('task')||txt.includes('implementation')||txt.includes('completion')||txt.includes('overdue'))go(rolePage('tasks'));
+      else if(txt.includes('team')||txt.includes('staff')||txt.includes('user'))go(rolePage('team'));
+      else toast('Opened summary details.');
+    },'Open related page');
+  });
+  document.querySelectorAll('.bb-row').forEach(row=>{
+    makeClickable(row,()=>{
+      const name=row.querySelector('.bb-label')?.textContent.trim();
+      const project=D.projects.find(p=>p.name===name);
+      if(!project){toast('Details opened.');return;}
+      const view=activeViewId();
+      if(ROLE==='finance'||view.includes('finance')||view.includes('bud'))openBudgetBreakdown(project.id);
+      else openProjDetail(project.id);
+    },'Open project details');
+  });
+  document.querySelectorAll('.team-row').forEach(row=>{
+    makeClickable(row,()=>{
+      const name=row.querySelector('[style*="font-weight:600"]')?.textContent.trim()||'team member';
+      toast(name+' profile opened in demo.');
+    },'Open profile');
+  });
+  document.querySelectorAll('.req-card').forEach(card=>{
+    makeClickable(card,()=>{
+      card.style.boxShadow='0 0 0 2px rgba(139,0,0,.18), var(--shadow)';
+      toast('Request details selected.');
+    },'Select request');
+  });
+  document.querySelectorAll('.k-card').forEach(card=>{
+    makeClickable(card,()=>{
+      const title=card.querySelector('.k-card-title')?.textContent.trim()||'task';
+      toast(title+' details opened in demo.');
+    },'Open task details');
+  });
+  document.querySelectorAll('.tbl tbody tr').forEach(row=>{
+    makeClickable(row,()=>toast('Row selected for details.'),'Open row details');
+  });
+  document.querySelectorAll('.panel').forEach(panel=>{
+    const header=panel.querySelector('.panel-hdr')?.textContent.trim()||'section';
+    const hasReportButtons=panel.innerText.includes('Export Report');
+    if(hasReportButtons){
+      makeClickable(panel,()=>toast(header+' preview opened.'),'Open preview');
+    }
+  });
+}
+
+
+// ════════════════════════════════════════════
+// PROJECT DETAIL PANEL
+// ════════════════════════════════════════════
+function openProjDetail(projId){
+  const p=D.projects.find(x=>x.id===projId);
+  if(!p)return;
+  const pct=p.tasks>0?Math.round(p.done/p.tasks*100):0;
+  const uc=p.budget>0?Math.round(p.spent/p.budget*100):0;
+  const sc=p.status==='Active'?'b-green':p.status==='Planning'?'b-amber':'b-gray';
+  const projTasks=D.tasks.filter(t=>t.project===p.id);
+  const remaining=p.budget-p.spent;
+
+  // Remove old panel if any
+  const old=document.getElementById('proj-detail-panel');
+  if(old)old.remove();
+  const oldBd=document.getElementById('proj-detail-backdrop');
+  if(oldBd)oldBd.remove();
+
+  // Backdrop
+  const bd=document.createElement('div');
+  bd.id='proj-detail-backdrop';
+  bd.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:80;backdrop-filter:blur(2px)';
+  bd.onclick=closeProjDetail;
+  document.body.appendChild(bd);
+
+  // Panel
+  const panel=document.createElement('div');
+  panel.id='proj-detail-panel';
+  panel.style.cssText=`position:fixed;top:0;right:0;width:480px;max-width:100vw;height:100vh;background:#fff;z-index:90;box-shadow:-8px 0 40px rgba(0,0,0,.15);overflow-y:auto;display:flex;flex-direction:column;animation:slideInRight .25s ease`;
+
+  const taskRows=projTasks.map(t=>{
+    const sc2={'Not Started':'#94A3B8','In Progress':'#1D4ED8','Done':'#059669','Review':'#D97706','Delayed':'#DC2626'}[t.status]||'#94A3B8';
+    const pc2={'High':'#DC2626','Medium':'#D97706','Low':'#059669'}[t.priority]||'#94A3B8';
+    return `<tr style="border-bottom:1px solid #F5F5F5">
+      <td style="padding:8px 12px;font-weight:500;font-size:12px">${t.title}</td>
+      <td style="padding:8px 12px"><span style="background:${sc2}18;color:${sc2};padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600">${t.status}</span></td>
+      <td style="padding:8px 12px"><span style="background:${pc2}18;color:${pc2};padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600">${t.priority}</span></td>
+      <td style="padding:8px 12px;font-size:11px;color:#64748B">${t.assign||'—'}</td>
+      <td style="padding:8px 12px;font-size:11px;color:#64748B">${t.activity||p.activity||'—'}</td>
+      <td style="padding:8px 12px;font-size:11px;color:#64748B">${t.output||'—'}</td>
+      <td style="padding:8px 12px;font-size:11px;color:#64748B">${t.supervisor||'—'}</td>
+      <td style="padding:8px 12px;font-size:11px;color:#64748B">${t.progress||0}%</td>
+      <td style="padding:8px 12px;font-size:11px;color:#64748B">${t.mov||t.indicators||'—'}</td>
+      <td style="padding:8px 12px;font-size:11px;color:#64748B">${t.due||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  panel.innerHTML=`
+  <style>@keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}</style>
+  <div style="background:${p.color};padding:20px 22px;color:#fff;position:sticky;top:0;z-index:2">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+      <div>
+        <div style="font-size:11px;font-weight:600;opacity:.65;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">${p.program}</div>
+        <div style="font-size:20px;font-weight:700">${p.name}</div>
+      </div>
+      <button onclick="closeProjDetail()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <span style="background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">${p.status}</span>
+      ${p.doc?`<span style="font-size:11px;opacity:.8">📎 ${p.doc}</span>`:''}
+      ${p.start&&p.end?`<span style="font-size:11px;opacity:.8">📅 ${p.start} → ${p.end}</span>`:''}
+    </div>
+  </div>
+
+  <div style="padding:18px 22px;border-bottom:1px solid #F1F5F9">
+    <div style="font-size:12px;color:#64748B;line-height:1.6">${p.desc}</div>
+  </div>
+
+  <div style="padding:16px 22px;border-bottom:1px solid #F1F5F9">
+    <div style="font-size:11px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Project record details</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${[
+        ['Project code',p.projectCode||'PRJ-DEMO'],
+        ['Application / proposal work plan',p.workPlan||p.activity||'Proposal work plan pending'],
+        ['Detailed budget',p.detailedBudget||RWF(p.budget)],
+        ['Results / objectives',p.objectives||p.items||'Objectives to be added'],
+        ['Responsible title',p.owner||'Program Manager'],
+        ['Supporting document',p.doc||'Not uploaded']
+      ].map(([k,v])=>`<div style="padding:10px;border:1px solid #E2E8F0;border-radius:8px;background:#F8FAFC"><div style="font-size:9px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">${k}</div><div style="font-size:12px;font-weight:700;color:#1A1A2E;line-height:1.35">${v}</div></div>`).join('')}
+    </div>
+  </div>
+
+  <!-- Clickable stat cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 22px;border-bottom:1px solid #F1F5F9">
+    <div onclick="openBudgetBreakdown(${p.id})" style="padding:14px;border-radius:10px;background:#FFF8F8;border:1px solid #F5C6C6;cursor:pointer;transition:all .15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(139,0,0,.12)'" onmouseout="this.style.boxShadow='none'">
+      <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">💰 Total Budget</div>
+      <div style="font-size:20px;font-weight:700;color:#8B0000">RWF ${(p.budget||0).toLocaleString()}</div>
+      <div style="font-size:11px;color:#64748B;margin-top:2px">Click to see breakdown →</div>
+    </div>
+    <div onclick="openBudgetBreakdown(${p.id})" style="padding:14px;border-radius:10px;background:#F0FDF4;border:1px solid #86EFAC;cursor:pointer;transition:all .15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(29,158,117,.12)'" onmouseout="this.style.boxShadow='none'">
+      <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">✅ Amount Spent</div>
+      <div style="font-size:20px;font-weight:700;color:#059669">RWF ${(p.spent||0).toLocaleString()}</div>
+      <div style="font-size:11px;color:#64748B;margin-top:2px">${uc}% utilised</div>
+    </div>
+    <div onclick="toast('Opening task board for this project...')" style="padding:14px;border-radius:10px;background:#EFF6FF;border:1px solid #93C5FD;cursor:pointer;transition:all .15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(29,78,216,.12)'" onmouseout="this.style.boxShadow='none'">
+      <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">📋 Total Tasks</div>
+      <div style="font-size:20px;font-weight:700;color:#1D4ED8">${p.tasks}</div>
+      <div style="font-size:11px;color:#64748B;margin-top:2px">${p.done} completed · ${p.tasks-p.done} remaining</div>
+    </div>
+    <div onclick="toast('Viewing timeline for this project...')" style="padding:14px;border-radius:10px;background:#FEF3C7;border:1px solid #FCD34D;cursor:pointer;transition:all .15s" onmouseover="this.style.boxShadow='0 4px 12px rgba(180,83,9,.12)'" onmouseout="this.style.boxShadow='none'">
+      <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">📅 Timeline</div>
+      <div style="font-size:14px;font-weight:700;color:#92400E">${p.start||'—'}</div>
+      <div style="font-size:12px;color:#64748B;margin-top:1px">to ${p.end||'—'}</div>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div style="padding:14px 22px;border-bottom:1px solid #F1F5F9">
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;font-weight:600">
+      <span style="color:#64748B">Overall Progress</span>
+      <span style="color:${p.color}">${pct}%</span>
+    </div>
+    <div style="background:#F1F5F9;border-radius:20px;height:10px;overflow:hidden">
+      <div style="width:${pct}%;height:100%;border-radius:20px;background:${p.color};transition:width .5s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:#94A3B8;margin-top:4px">
+      <span>Budget utilisation: ${uc}%</span>
+      <span>Remaining: RWF ${remaining.toLocaleString()}</span>
+    </div>
+  </div>
+
+  <!-- Tasks table -->
+  <div style="padding:14px 22px;flex:1">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700">Tasks (${projTasks.length})</div>
+      <button onclick="closeProjDetail();showModal('addTask',null,${p.id})" style="background:#1D9E75;border:none;color:#fff;border-radius:7px;padding:6px 12px;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">+ Create activities</button>
+    </div>
+    ${projTasks.length>0?`
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+	      <thead><tr style="background:#8B0000;color:#fff"><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Task</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Status</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Priority</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Assignee</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Activity</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Output</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Reviewer</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Progress</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">M&E evidence</th><th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Due</th></tr></thead>
+      <tbody>${taskRows}</tbody>
+    </table>`:'<div style="padding:16px 0;text-align:center;font-size:12px;color:#94A3B8">No tasks yet — add the first task above</div>'}
+  </div>
+
+  <!-- Actions -->
+  <div style="padding:14px 22px;border-top:1px solid #F1F5F9;display:flex;gap:8px;position:sticky;bottom:0;background:#fff">
+    <button onclick="closeProjDetail()" style="flex:1;padding:9px;border-radius:7px;border:1px solid #E2E8F0;background:#fff;cursor:pointer;font-size:12px;font-family:inherit;font-weight:500">Close</button>
+    <button onclick="closeProjDetail();showModal('addTask',null,${p.id})" style="flex:2;padding:9px;border-radius:7px;border:none;background:#1D9E75;color:#fff;cursor:pointer;font-size:12px;font-family:inherit;font-weight:700">+ Assign Task to Project</button>
+    <button onclick="toast('Opening full project editor...')" style="flex:1;padding:9px;border-radius:7px;border:none;background:#8B0000;color:#fff;cursor:pointer;font-size:12px;font-family:inherit;font-weight:600">Edit</button>
+  </div>`;
+
+  document.body.appendChild(panel);
+  bindDemoInteractions();
+}
+
+function closeProjDetail(){
+  const p=document.getElementById('proj-detail-panel');
+  const b=document.getElementById('proj-detail-backdrop');
+  if(p){p.style.animation='slideOutRight .2s ease';setTimeout(()=>p.remove(),200);}
+  if(b)b.remove();
+}
+
+function openRequestBudget(reqId){
+  const r=D.requests.find(x=>x.id===reqId);
+  const match=D.projects.find(p=>p.projectCode===r?.projectCode)||D.projects[0];
+  if(match){
+    openBudgetBreakdown(match.id);
+    toast('Budget details opened for '+(r?.title||'selected request')+'.');
+  }else{
+    toast('No project budget is available yet.');
+  }
+}
+
+function openBudgetBreakdown(projId){
+  const p=D.projects.find(x=>x.id===projId);
+  if(!p)return;
+  const remaining=p.budget-p.spent;
+  const uc=p.budget>0?Math.round(p.spent/p.budget*100):0;
+
+  // Budget breakdown modal
+  document.getElementById('modal-box').innerHTML=`
+  <div class="modal-head" style="background:${p.color}">
+    <div class="modal-head-title">💰 Budget Breakdown — ${p.name}</div>
+    <button class="btn ghost" style="color:#fff;padding:4px 8px" onclick="closeModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="padding:12px;background:#FFF8F8;border-radius:8px;border:1px solid #F5C6C6;text-align:center">
+        <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Total Budget</div>
+        <div style="font-size:18px;font-weight:700;color:#8B0000">RWF ${(p.budget||0).toLocaleString()}</div>
+      </div>
+      <div style="padding:12px;background:#F0FDF4;border-radius:8px;border:1px solid #86EFAC;text-align:center">
+        <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Spent</div>
+        <div style="font-size:18px;font-weight:700;color:#059669">RWF ${(p.spent||0).toLocaleString()}</div>
+      </div>
+      <div style="padding:12px;background:#EFF6FF;border-radius:8px;border:1px solid #93C5FD;text-align:center">
+        <div style="font-size:10px;color:#94A3B8;font-weight:600;text-transform:uppercase;margin-bottom:4px">Remaining</div>
+        <div style="font-size:18px;font-weight:700;color:#1D4ED8">RWF ${remaining.toLocaleString()}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;font-weight:600"><span style="color:#64748B">Budget utilisation</span><span style="color:${uc>90?'#DC2626':uc>70?'#D97706':'#059669'}">${uc}%</span></div>
+      <div style="background:#F1F5F9;border-radius:20px;height:10px;overflow:hidden"><div style="width:${uc}%;height:100%;border-radius:20px;background:${uc>90?'#DC2626':uc>70?'#D97706':'#059669'};transition:width .5s"></div></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:#8B0000;color:#fff">
+        <th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase">Budget Line</th>
+        <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase">Allocated</th>
+        <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase">Spent</th>
+        <th style="padding:8px 12px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase">Remaining</th>
+      </tr></thead>
+      <tbody>
+        ${[
+          {line:'Staff & Consultants',alloc:Math.round(p.budget*.4),spent:Math.round(p.spent*.45)},
+          {line:'Activities & Events',alloc:Math.round(p.budget*.25),spent:Math.round(p.spent*.3)},
+          {line:'Equipment & Materials',alloc:Math.round(p.budget*.15),spent:Math.round(p.spent*.12)},
+          {line:'Travel & Transport',alloc:Math.round(p.budget*.1),spent:Math.round(p.spent*.08)},
+          {line:'Admin & Overhead',alloc:Math.round(p.budget*.1),spent:Math.round(p.spent*.05)},
+        ].map((b,i)=>`<tr style="background:${i%2===0?'#fff':'#FAFAFA'};border-bottom:1px solid #F5F5F5">
+          <td style="padding:9px 12px;font-weight:500">${b.line}</td>
+          <td style="padding:9px 12px;text-align:right">RWF ${b.alloc.toLocaleString()}</td>
+          <td style="padding:9px 12px;text-align:right;color:#059669;font-weight:600">RWF ${b.spent.toLocaleString()}</td>
+          <td style="padding:9px 12px;text-align:right;color:${b.spent>b.alloc?'#DC2626':'#1D4ED8'};font-weight:600">RWF ${(b.alloc-b.spent).toLocaleString()}</td>
+        </tr>`).join('')}
+        <tr style="background:#FFF8F8;border-top:2px solid #8B0000">
+          <td style="padding:10px 12px;font-weight:700">TOTAL</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:700;color:#8B0000">RWF ${(p.budget||0).toLocaleString()}</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:700;color:#059669">RWF ${(p.spent||0).toLocaleString()}</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:700;color:#1D4ED8">RWF ${remaining.toLocaleString()}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px;padding:10px 14px;background:#FEF3C7;border-radius:8px;border:1px solid #FCD34D;font-size:12px;color:#92400E">
+      📅 Project period: <b>${p.start||'—'}</b> to <b>${p.end||'—'}</b>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn" onclick="closeModal()">Close</button>
+    <button class="btn gp" onclick="closeModal();toast('Budget report exported!')">Export Report</button>
+  </div>`;
+  document.getElementById('overlay').style.display='flex';
+  bindDemoInteractions();
+}
+// add slide out animation
+const styleEl=document.createElement('style');
+styleEl.textContent='@keyframes slideOutRight{from{transform:translateX(0)}to{transform:translateX(100%)}}';
+document.head.appendChild(styleEl);
+
+// Responsive
+if(window.innerWidth<=768){
+  document.getElementById('sidebar').style.position='fixed';
+}
+</script>
+</body>
 </html>
