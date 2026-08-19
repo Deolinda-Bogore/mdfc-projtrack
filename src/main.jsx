@@ -4,7 +4,7 @@ import {
   adminOperations,
   assets,
   auditTrail,
-  budgets,
+  budgets as seedBudgets,
   evidence,
   grants,
   hr,
@@ -24,6 +24,16 @@ import './styles.css';
 
 const logoSrc = '/mdfc-logo.png';
 const money = (value) => `RWF ${Number(value || 0).toLocaleString()}`;
+const roleEmails = {
+  director: 'director@mdfc.rw',
+  manager: 'manager@mdfc.rw',
+  employee: 'employee@mdfc.rw',
+  finance: 'finance@mdfc.rw',
+};
+
+function userToRow(user) {
+  return [user.name, user.department, user.role || user.title];
+}
 
 function App() {
   const [role, setRole] = useState('manager');
@@ -32,8 +42,10 @@ function App() {
   const [projects, setProjects] = useState(seedProjects);
   const [tasks, setTasks] = useState(seedTasks);
   const [requests, setRequests] = useState(seedRequests);
+  const [budgetRows, setBudgetRows] = useState(seedBudgets);
   const [operations, setOperations] = useState(adminOperations);
   const [users, setUsers] = useState(Object.values(roles).map((item) => [item.name, item.label, item.description]));
+  const [uploads, setUploads] = useState([]);
   const [toast, setToast] = useState('');
   const [apiStatus, setApiStatus] = useState('Frontend demo mode');
 
@@ -49,8 +61,10 @@ function App() {
         setProjects(data.projects);
         setTasks(data.tasks);
         setRequests(data.requests);
+        setBudgetRows(data.budgets);
         setOperations(data.adminOperations);
-        setUsers(data.users);
+        setUsers(data.users.map(userToRow));
+        setUploads(data.uploads || []);
         setApiStatus('Connected to backend API');
       })
       .catch(() => setApiStatus('Frontend demo mode'));
@@ -65,9 +79,9 @@ function App() {
     window.setTimeout(() => setToast(''), 2200);
   }
 
-  async function login(selectedRole) {
+  async function login(selectedRole, credentials) {
     try {
-      await api.login(selectedRole);
+      await api.login({ role: selectedRole, ...credentials });
       setApiStatus('Connected to backend API');
     } catch {
       setApiStatus('Frontend demo mode');
@@ -142,7 +156,9 @@ function App() {
     });
     try {
       const saved = await api.updateRequestStatus(id, status);
-      setRequests((current) => current.map((item) => (item.id === id ? saved : item)));
+      const refreshed = await api.bootstrap();
+      setRequests(refreshed.requests.map((item) => (item.id === id ? saved : item)));
+      setBudgetRows(refreshed.budgets);
       setApiStatus('Connected to backend API');
     } catch {
       setRequests((current) => current.map((item) => (item.id === id ? update(item) : item)));
@@ -185,13 +201,25 @@ function App() {
   async function addUser(user) {
     try {
       const saved = await api.createUser(user);
-      setUsers((current) => [saved, ...current]);
+      setUsers((current) => [userToRow(saved), ...current]);
       setApiStatus('Connected to backend API');
     } catch {
       setUsers((current) => [[user.name, user.department, user.systemRole], ...current]);
       setApiStatus('Frontend demo mode');
     }
     notify('User added');
+  }
+
+  async function addUpload(upload) {
+    try {
+      const saved = await api.createUpload(upload);
+      setUploads((current) => [saved, ...current]);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setUploads((current) => [{ ...upload, id: Date.now(), uploadedAt: new Date().toISOString(), uploadedBy: roles[role].name }, ...current]);
+      setApiStatus('Frontend demo mode');
+    }
+    notify('Document metadata saved');
   }
 
   if (!signedIn) {
@@ -210,8 +238,10 @@ function App() {
             projects={projects}
             tasks={tasks}
             requests={requests}
+            budgets={budgetRows}
             operations={operations}
             users={users}
+            uploads={uploads}
             addProject={addProject}
             addTask={addTask}
             addRequest={addRequest}
@@ -219,6 +249,7 @@ function App() {
             addOperation={addOperation}
             sendOperationToFinance={sendOperationToFinance}
             addUser={addUser}
+            addUpload={addUpload}
             notify={notify}
           />
         </div>
@@ -229,6 +260,14 @@ function App() {
 }
 
 function Login({ selectedRole, setSelectedRole, onLogin }) {
+  const [email, setEmail] = useState(roleEmails[selectedRole]);
+  const [password, setPassword] = useState('mdfc-demo');
+
+  function chooseRole(role) {
+    setSelectedRole(role);
+    setEmail(roleEmails[role]);
+  }
+
   return (
     <section className="login-screen">
       <div className="login-shell">
@@ -239,19 +278,19 @@ function Login({ selectedRole, setSelectedRole, onLogin }) {
           <p className="login-muted">Choose a role to enter the system workspace.</p>
           <div className="role-grid">
             {Object.entries(roles).map(([id, item]) => (
-              <button className={selectedRole === id ? 'role-chip active' : 'role-chip'} key={id} onClick={() => setSelectedRole(id)} type="button">
+              <button className={selectedRole === id ? 'role-chip active' : 'role-chip'} key={id} onClick={() => chooseRole(id)} type="button">
                 <span>{item.initials}</span>
                 <strong>{item.label}</strong>
                 <small>{item.description}</small>
               </button>
             ))}
           </div>
-          <Input label="Email" value={`${selectedRole}@mdfc.rw`} readOnly dark />
-          <Input label="Password" value="********" readOnly dark type="password" />
-          <button className="primary wide" onClick={() => onLogin(selectedRole)} type="button">
+          <Input label="Email" value={email} onChange={setEmail} dark />
+          <Input label="Password" value={password} onChange={setPassword} dark type="password" />
+          <button className="primary wide" onClick={() => onLogin(selectedRole, { email, password })} type="button">
             Sign in
           </button>
-          <p className="demo-note">Demo only. Select any role above.</p>
+          <p className="demo-note">Demo password: mdfc-demo</p>
         </div>
         <SystemStructure />
       </div>
@@ -333,7 +372,7 @@ function Page(props) {
   if (page === 'tasks') return <Tasks {...props} employeeOnly={role === 'employee'} />;
   if (page === 'requests') return <Requests {...props} financeMode={role === 'finance' || role === 'director'} />;
   if (page === 'finance') return <Finance {...props} />;
-  if (page === 'budget') return <Budget />;
+  if (page === 'budget') return <Budget budgets={props.budgets} />;
   if (page === 'procurement') return <Procurement />;
   if (page === 'payments') return <Payments />;
   if (page === 'administration') return <Administration {...props} />;
@@ -343,6 +382,7 @@ function Page(props) {
   if (page === 'worklog') return <WorkLog tasks={props.tasks} />;
   if (page === 'audit') return <Audit />;
   if (page === 'reports') return <Reports notify={props.notify} />;
+  if (page === 'documents') return <Documents uploads={props.uploads} addUpload={props.addUpload} />;
   if (page === 'users') return <Users users={props.users} addUser={props.addUser} />;
   return <Dashboard {...props} />;
 }
@@ -634,7 +674,7 @@ function Flow() {
   );
 }
 
-function Budget() {
+function Budget({ budgets }) {
   return <DataTable title="Budget Management" headers={['Project', 'Donor', 'Category', 'Budget Line', 'Approved Budget', 'Actual Expenditure', 'Remaining Balance', 'Forecast', 'Alert']} rows={budgets.map((row) => row.map((item, index) => index >= 4 && index <= 7 ? money(item) : item))} />;
 }
 
@@ -726,15 +766,102 @@ function Audit() {
 }
 
 function Reports({ notify }) {
+  async function exportReport(type, label) {
+    try {
+      const report = await api.exportReport(type);
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${type}-report.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      notify(`${label} exported`);
+    } catch {
+      notify(`${label} prepared for export`);
+    }
+  }
+
+  const reports = [
+    ['programs', 'Programs Report'],
+    ['finance', 'Finance Report'],
+    ['administration', 'Administration Report'],
+  ];
+
   return (
     <div className="grid three">
-      {['Programs Report', 'Finance Report', 'Administration Report'].map((title) => (
+      {reports.map(([type, title]) => (
         <Panel title={title} key={title}>
           <p className="muted">Export-ready summary for management review.</p>
-          <button className="secondary" onClick={() => notify(`${title} prepared for export`)} type="button">Export</button>
+          <button className="secondary" onClick={() => exportReport(type, title)} type="button">Export</button>
         </Panel>
       ))}
     </div>
+  );
+}
+
+function Documents({ uploads, addUpload }) {
+  const [open, setOpen] = useState(false);
+  const rows = uploads.map((upload) => [
+    upload.fileName,
+    upload.documentType,
+    upload.linkedModule,
+    upload.linkedRecord,
+    upload.size ? `${Math.round(upload.size / 1024)} KB` : 'Metadata only',
+    upload.uploadedBy,
+    new Date(upload.uploadedAt).toLocaleString(),
+    upload.notes,
+  ]);
+  return (
+    <>
+      <SectionHead title="Supporting Documents" action="Add Document" onClick={() => setOpen((value) => !value)} />
+      {open && <UploadForm onSubmit={addUpload} />}
+      <DataTable title="Document Register" headers={['File Name', 'Document Type', 'Module', 'Linked Record', 'Size', 'Uploaded By', 'Uploaded At', 'Notes']} rows={rows} />
+    </>
+  );
+}
+
+function UploadForm({ onSubmit }) {
+  const [form, setForm] = useState({ fileName: '', documentType: '', linkedModule: '', linkedRecord: '', notes: '', mimeType: '', size: 0, contentBase64: '' });
+  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const contentBase64 = String(reader.result).split(',')[1] || '';
+      setForm((current) => ({
+        ...current,
+        fileName: file.name,
+        mimeType: file.type,
+        size: file.size,
+        contentBase64,
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+  function submit(event) {
+    event.preventDefault();
+    if (!form.fileName || !form.documentType) return;
+    onSubmit(form);
+    setForm({ fileName: '', documentType: '', linkedModule: '', linkedRecord: '', notes: '' });
+  }
+  return (
+    <form className="form-card" onSubmit={submit}>
+      <div className="form-row">
+        <Input label="File name" value={form.fileName} onChange={(value) => update('fileName', value)} placeholder="quotation.pdf" />
+        <Input label="Document type" value={form.documentType} onChange={(value) => update('documentType', value)} placeholder="Quotation, invoice, report, receipt" />
+      </div>
+      <label>
+        <span>Choose file</span>
+        <input type="file" onChange={(event) => handleFile(event.target.files?.[0])} />
+      </label>
+      <div className="form-row">
+        <Input label="Linked module" value={form.linkedModule} onChange={(value) => update('linkedModule', value)} placeholder="Programs, Finance, Administration" />
+        <Input label="Linked record" value={form.linkedRecord} onChange={(value) => update('linkedRecord', value)} placeholder="REQ-001 or project title" />
+      </div>
+      <Input label="Notes" value={form.notes} onChange={(value) => update('notes', value)} textarea />
+      <button className="primary" type="submit">Save document metadata</button>
+    </form>
   );
 }
 
@@ -750,7 +877,7 @@ function Users({ users, addUser }) {
 }
 
 function UserForm({ onSubmit }) {
-  const [form, setForm] = useState({ name: '', department: '', systemRole: '' });
+  const [form, setForm] = useState({ name: '', email: '', department: '', title: '', systemRole: 'employee', password: 'mdfc-demo' });
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
   function submit(event) {
     event.preventDefault();
@@ -761,9 +888,16 @@ function UserForm({ onSubmit }) {
     <form className="form-card" onSubmit={submit}>
       <div className="form-row">
         <Input label="Name or title" value={form.name} onChange={(value) => update('name', value)} />
-        <Input label="Department" value={form.department} onChange={(value) => update('department', value)} list="departments" />
+        <Input label="Email" value={form.email} onChange={(value) => update('email', value)} />
       </div>
-      <Input label="System role" value={form.systemRole} onChange={(value) => update('systemRole', value)} list="system-roles" />
+      <div className="form-row">
+        <Input label="Department" value={form.department} onChange={(value) => update('department', value)} list="departments" />
+        <Input label="Title" value={form.title} onChange={(value) => update('title', value)} list="titles" />
+      </div>
+      <div className="form-row">
+        <Input label="System role" value={form.systemRole} onChange={(value) => update('systemRole', value)} list="system-roles" />
+        <Input label="Temporary password" value={form.password} onChange={(value) => update('password', value)} type="password" />
+      </div>
       <button className="primary" type="submit">Add user</button>
     </form>
   );

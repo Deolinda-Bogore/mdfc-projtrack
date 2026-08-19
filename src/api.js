@@ -20,8 +20,8 @@ async function request(path, options = {}) {
 
 export const api = {
   bootstrap: () => request('/bootstrap'),
-  login: async (role) => {
-    const session = await request('/login', { method: 'POST', body: JSON.stringify({ role }) });
+  login: async ({ role, email, password }) => {
+    const session = await request('/login', { method: 'POST', body: JSON.stringify({ role, email, password }) });
     sessionToken = session.token;
     return session;
   },
@@ -33,4 +33,6 @@ export const api = {
   createAdminOperation: (operation) =>
     request('/admin-operations', { method: 'POST', body: JSON.stringify(operation) }),
   createUser: (user) => request('/users', { method: 'POST', body: JSON.stringify(user) }),
+  createUpload: (upload) => request('/uploads', { method: 'POST', body: JSON.stringify(upload) }),
+  exportReport: (type) => request(`/reports/${type}`),
 };

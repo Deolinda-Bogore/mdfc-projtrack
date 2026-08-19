@@ -3,7 +3,8 @@ import crypto from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { audit, nextId, readDatabase, updateDatabase } from './store.js';
+import { can, hashPassword, publicUser, verifyPassword } from './auth.js';
+import { audit, nextId, notify, readDatabase, updateDatabase } from './store.js';
 
 const host = '127.0.0.1';
 const port = Number(process.env.PORT || 5174);
@@ -16,6 +17,14 @@ function sendJson(response, status, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function publicDatabase(data) {
+  return {
+    ...data,
+    users: data.users.map(publicUser),
+    uploads: (data.uploads || []).map(({ contentBase64, ...upload }) => upload),
+  };
+}
+
 async function readBody(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
@@ -23,17 +32,49 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-function requireSession(request, response) {
+function requireSession(request, response, action = 'read') {
   const token = request.headers.authorization?.replace('Bearer ', '');
-  if (token && sessions.has(token)) return sessions.get(token);
+  if (token && sessions.has(token)) {
+    const session = sessions.get(token);
+    if (can(session.role, action)) return session;
+    sendJson(response, 403, { message: 'You do not have permission for this action' });
+    return null;
+  }
   sendJson(response, 401, { message: 'Demo session required' });
   return null;
 }
 
-function createToken(role) {
+function createToken(user) {
+  const role = user.role;
   const token = `demo-${role}-${crypto.randomUUID()}`;
-  sessions.set(token, { role, createdAt: new Date().toISOString() });
+  sessions.set(token, { role, userId: user.id, name: user.name, createdAt: new Date().toISOString() });
   return token;
+}
+
+function findBudget(data, requisition) {
+  return data.budgets.find((row) => row[0] === requisition.project || row[3] === requisition.budgetLine);
+}
+
+function checkBudget(data, requisition) {
+  const budget = findBudget(data, requisition);
+  if (!budget) return { status: 'Budget Not Found', available: false, remaining: 0 };
+  const remaining = Number(budget[6] || 0);
+  return {
+    status: Number(requisition.amount || 0) <= remaining ? 'Budget OK' : 'Budget Not Available',
+    available: Number(requisition.amount || 0) <= remaining,
+    remaining,
+  };
+}
+
+function applyApprovedRequestToBudget(data, requisition) {
+  const budget = findBudget(data, requisition);
+  if (!budget || requisition.budgetPosted) return;
+  const amount = Number(requisition.amount || 0);
+  budget[5] = Number(budget[5] || 0) + amount;
+  budget[6] = Math.max(Number(budget[4] || 0) - Number(budget[5] || 0), 0);
+  requisition.spentAmount = amount;
+  requisition.referenceNo = requisition.referenceNo === 'Pending' ? `PAY-${requisition.code}` : requisition.referenceNo;
+  requisition.budgetPosted = true;
 }
 
 function normalizeRequest(input, id) {
@@ -50,34 +91,39 @@ function normalizeRequest(input, id) {
     spentAmount: Number(input.spentAmount || 0),
     variance: Number(input.variance || 0),
     referenceNo: input.referenceNo || 'Pending',
+    workflowStage: input.workflowStage || 'Finance Verification',
+    approvalHistory: input.approvalHistory || [],
+    uploads: input.uploads || [],
   };
 }
 
 async function handleApi(request, response, url) {
   if (request.method === 'GET' && url.pathname === '/api/bootstrap') {
-    sendJson(response, 200, await readDatabase());
+    sendJson(response, 200, publicDatabase(await readDatabase()));
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/login') {
     const body = await readBody(request);
-    if (!roles.has(body.role)) {
-      sendJson(response, 400, { message: 'Unknown role' });
+    const data = await readDatabase();
+    const user = data.users.find((item) => item.email === body.email && item.role === body.role && item.active !== false);
+    if (!user || !roles.has(user.role) || !verifyPassword(body.password || '', user.passwordHash)) {
+      sendJson(response, 401, { message: 'Invalid email, role, or password' });
       return;
     }
-    sendJson(response, 200, { role: body.role, token: createToken(body.role) });
+    sendJson(response, 200, { user: publicUser(user), token: createToken(user) });
     return;
   }
 
-  const session = requireSession(request, response);
-  if (!session) return;
-
   if (request.method === 'POST' && url.pathname === '/api/projects') {
+    const session = requireSession(request, response, 'manage_projects');
+    if (!session) return;
     const body = await readBody(request);
     const created = await updateDatabase((data) => {
       const project = { ...body, id: nextId(data.projects), spent: 0, progress: 0, status: body.status || 'Planning' };
       data.projects.unshift(project);
       audit(data, body.owner || session.role, 'Created project', project.title);
+      notify(data, 'director', `New project created: ${project.title}`, project.title);
       return project;
     });
     sendJson(response, 201, created);
@@ -85,11 +131,14 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/tasks') {
+    const session = requireSession(request, response, 'manage_projects');
+    if (!session) return;
     const body = await readBody(request);
     const created = await updateDatabase((data) => {
       const task = { ...body, id: nextId(data.tasks), status: body.status || 'Not Started' };
       data.tasks.unshift(task);
       audit(data, body.assignee || session.role, 'Created task', task.title);
+      notify(data, 'employee', `New task assigned: ${task.title}`, task.title);
       return task;
     });
     sendJson(response, 201, created);
@@ -97,11 +146,21 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/requests') {
+    const session = requireSession(request, response, can(sessions.get(request.headers.authorization?.replace('Bearer ', ''))?.role, 'manage_projects') ? 'manage_projects' : 'create_request');
+    if (!session) return;
     const body = await readBody(request);
     const created = await updateDatabase((data) => {
       const requisition = normalizeRequest(body, nextId(data.requests));
+      const budgetCheck = checkBudget(data, requisition);
+      requisition.budgetStatus = budgetCheck.status;
+      requisition.remainingBudgetAtSubmission = budgetCheck.remaining;
+      requisition.status = budgetCheck.available ? requisition.status : 'Returned';
+      requisition.comments = budgetCheck.available
+        ? requisition.comments
+        : 'Budget not available. Request needs revision or budget adjustment.';
       data.requests.unshift(requisition);
       audit(data, body.preparedBy || body.requestingTitle || session.role, 'Created requisition', requisition.code);
+      notify(data, 'finance', `New requisition ready for review: ${requisition.code}`, requisition.code);
       return requisition;
     });
     sendJson(response, 201, created);
@@ -110,18 +169,35 @@ async function handleApi(request, response, url) {
 
   const statusMatch = url.pathname.match(/^\/api\/requests\/(\d+)\/status$/);
   if (request.method === 'PATCH' && statusMatch) {
+    const session = requireSession(request, response, 'finance_review');
+    if (!session) return;
     const id = Number(statusMatch[1]);
     const body = await readBody(request);
     const updated = await updateDatabase((data) => {
       const requisition = data.requests.find((item) => item.id === id);
       if (!requisition) return null;
+      const budgetCheck = checkBudget(data, requisition);
+      if (body.status === 'Approved' && !budgetCheck.available) {
+        requisition.status = 'Returned';
+        requisition.budgetStatus = budgetCheck.status;
+        requisition.comments = 'Approval blocked because budget is not available.';
+        requisition.recommendations = 'Request a budget adjustment before approval.';
+        notify(data, 'manager', `Budget blocked request ${requisition.code}`, requisition.code);
+        return requisition;
+      }
       requisition.status = body.status;
       requisition.verifiedBy = body.status === 'Returned' ? 'Returned by Finance Officer' : 'Finance Officer';
       requisition.executiveApproval = body.status === 'Approved' ? 'Approved' : requisition.executiveApproval;
       requisition.boardApproval = body.status === 'Approved' ? 'Approved' : requisition.boardApproval;
       requisition.comments = body.status === 'Returned' ? 'Correction requested before approval.' : 'Request updated through workflow.';
       requisition.recommendations = body.status === 'Rejected' ? 'Do not proceed.' : 'Proceed with next workflow step.';
+      requisition.approvalHistory = [
+        ...(requisition.approvalHistory || []),
+        { time: new Date().toISOString(), role: session.role, status: body.status, comment: requisition.comments },
+      ];
+      if (body.status === 'Approved') applyApprovedRequestToBudget(data, requisition);
       audit(data, session.role, `Marked request ${body.status}`, requisition.code);
+      notify(data, 'director', `Request ${requisition.code} marked ${body.status}`, requisition.code);
       return requisition;
     });
     sendJson(response, updated ? 200 : 404, updated || { message: 'Request not found' });
@@ -129,11 +205,14 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/admin-operations') {
+    const session = requireSession(request, response, 'manage_admin');
+    if (!session) return;
     const body = await readBody(request);
     const created = await updateDatabase((data) => {
       const operation = [body.name, Number(body.amount || 0), body.responsible, body.timeline, body.remarks, body.method];
       data.adminOperations.unshift(operation);
       audit(data, body.responsible || session.role, 'Created admin operation', body.name);
+      notify(data, 'finance', `Administration operation created: ${body.name}`, body.name);
       return operation;
     });
     sendJson(response, 201, created);
@@ -141,14 +220,98 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/users') {
+    const session = requireSession(request, response, 'manage_users');
+    if (!session) return;
     const body = await readBody(request);
     const created = await updateDatabase((data) => {
-      const user = [body.name, body.department, body.systemRole];
+      const requestedRole = String(body.systemRole || 'employee').toLowerCase();
+      const role = requestedRole.includes('finance')
+        ? 'finance'
+        : requestedRole.includes('director')
+          ? 'director'
+          : requestedRole.includes('manager')
+            ? 'manager'
+            : 'employee';
+      const user = {
+        id: nextId(data.users),
+        name: body.name,
+        email: body.email || `${body.name.toLowerCase().replaceAll(' ', '.')}@mdfc.rw`,
+        department: body.department,
+        role,
+        title: body.title || body.systemRole,
+        passwordHash: hashPassword(body.password || 'mdfc-demo'),
+        active: true,
+      };
       data.users.unshift(user);
       audit(data, session.role, 'Created user', body.name);
-      return user;
+      notify(data, user.role, 'Your account has been created', user.email);
+      return publicUser(user);
     });
     sendJson(response, 201, created);
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/uploads') {
+    const session = requireSession(request, response, 'upload');
+    if (!session) return;
+    const body = await readBody(request);
+    const created = await updateDatabase((data) => {
+      const upload = {
+        id: nextId(data.uploads || []),
+        fileName: body.fileName,
+        mimeType: body.mimeType || 'application/octet-stream',
+        size: Number(body.size || 0),
+        contentBase64: body.contentBase64 || '',
+        documentType: body.documentType,
+        linkedModule: body.linkedModule,
+        linkedRecord: body.linkedRecord,
+        uploadedBy: session.name,
+        uploadedAt: new Date().toISOString(),
+        notes: body.notes || '',
+      };
+      data.uploads.unshift(upload);
+      audit(data, session.role, 'Uploaded supporting document metadata', upload.fileName);
+      return upload;
+    });
+    sendJson(response, 201, created);
+    return;
+  }
+
+  const reportMatch = url.pathname.match(/^\/api\/reports\/([\w-]+)$/);
+  if (request.method === 'GET' && reportMatch) {
+    const session = requireSession(request, response, 'reports');
+    if (!session) return;
+    const type = reportMatch[1];
+    const data = await readDatabase();
+    const reports = {
+      programs: {
+        generatedAt: new Date().toISOString(),
+        projects: data.projects.length,
+        tasks: data.tasks.length,
+        activeProjects: data.projects.filter((item) => item.status === 'Active').length,
+        projectProgress: data.projects.map((item) => ({ title: item.title, progress: item.progress, budget: item.budget, spent: item.spent })),
+      },
+      finance: {
+        generatedAt: new Date().toISOString(),
+        requests: data.requests.length,
+        pendingRequests: data.requests.filter((item) => item.status === 'Submitted').length,
+        approvedRequests: data.requests.filter((item) => item.status === 'Approved').length,
+        budgets: data.budgets.map((row) => ({ project: row[0], donor: row[1], budgetLine: row[3], approved: row[4], actual: row[5], remaining: row[6], forecast: row[7], alert: row[8] })),
+      },
+      administration: {
+        generatedAt: new Date().toISOString(),
+        operations: data.adminOperations.length,
+        assets: data.assets.length,
+        inventory: data.inventory.length,
+        travel: data.travel.length,
+        hrRecords: data.hr.length,
+      },
+      audit: {
+        generatedAt: new Date().toISOString(),
+        entries: data.auditTrail,
+      },
+    };
+    sendJson(response, reports[type] ? 200 : 404, reports[type] || { message: 'Report not found' });
     return;
   }
 

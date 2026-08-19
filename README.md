@@ -11,6 +11,11 @@ React + Vite implementation for the proposed MDFC Project Management System.
 - Finance views for review, payments, budgets, and reports
 - Employee views for tasks, personal requests, and weekly work logs
 - Local backend API with JSON persistence for projects, tasks, requests, admin operations, and users
+- Demo email/password authentication with hashed local passwords
+- Backend role permissions for Director, Manager, Employee/Implementor, and Finance
+- Budget availability checks and budget updates when requests are approved
+- Supporting document register with local file-content storage for development
+- JSON report exports for Programs, Finance, Administration, and Audit
 
 ## Run Locally
 
@@ -29,6 +34,19 @@ npm run api
 
 The React app uses `/api` through the Vite proxy during development. If the backend is not running, the app stays usable in frontend demo mode.
 
+Demo accounts use the password:
+
+```text
+mdfc-demo
+```
+
+Available emails:
+
+- `director@mdfc.rw`
+- `manager@mdfc.rw`
+- `employee@mdfc.rw`
+- `finance@mdfc.rw`
+
 To build and serve the production bundle locally:
 
 ```bash
@@ -38,4 +56,6 @@ npm start
 
 ## Implementation Direction
 
-The current version now has a frontend MVP plus a local development backend. The next steps are real authentication, role permission checks, a production database, file uploads, email notifications, and deployment.
+The current version now has a frontend MVP plus a local development backend with authentication, role permissions, persistence, budget checks, document storage, reports, notifications, and audit trail support.
+
+For production use, MDFC would still need to choose and configure a hosted database, secure file storage, email notification provider, domain/hosting, backups, and official staff accounts.

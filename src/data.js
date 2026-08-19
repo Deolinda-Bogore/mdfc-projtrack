@@ -33,6 +33,7 @@ export const navigation = {
     ['administration', 'Administration'],
     ['approvals', 'Approvals'],
     ['reports', 'Reports'],
+    ['documents', 'Documents'],
     ['users', 'Users'],
   ],
   manager: [
@@ -43,6 +44,7 @@ export const navigation = {
     ['administration', 'Administration'],
     ['evidence', 'M&E Evidence'],
     ['grants', 'Grants Database'],
+    ['documents', 'Documents'],
     ['users', 'Users'],
   ],
   employee: [
@@ -50,6 +52,7 @@ export const navigation = {
     ['tasks', 'My Tasks'],
     ['requests', 'Submit Request'],
     ['evidence', 'M&E Evidence'],
+    ['documents', 'Documents'],
     ['worklog', 'My Work Log'],
   ],
   finance: [
@@ -59,6 +62,7 @@ export const navigation = {
     ['procurement', 'Procurement'],
     ['payments', 'Payments'],
     ['audit', 'Audit Trail'],
+    ['documents', 'Documents'],
   ],
 };
 
