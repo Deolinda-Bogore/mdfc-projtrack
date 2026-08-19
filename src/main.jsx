@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   adminOperations,
@@ -19,6 +19,7 @@ import {
   tasks as seedTasks,
   travel,
 } from './data.js';
+import { api } from './api.js';
 import './styles.css';
 
 const logoSrc = '/mdfc-logo.png';
@@ -34,33 +35,76 @@ function App() {
   const [operations, setOperations] = useState(adminOperations);
   const [users, setUsers] = useState(Object.values(roles).map((item) => [item.name, item.label, item.description]));
   const [toast, setToast] = useState('');
+  const [apiStatus, setApiStatus] = useState('Frontend demo mode');
 
   const navItems = navigation[role];
   const activeRole = roles[role];
+
+  useEffect(() => {
+    let mounted = true;
+    api
+      .bootstrap()
+      .then((data) => {
+        if (!mounted) return;
+        setProjects(data.projects);
+        setTasks(data.tasks);
+        setRequests(data.requests);
+        setOperations(data.adminOperations);
+        setUsers(data.users);
+        setApiStatus('Connected to backend API');
+      })
+      .catch(() => setApiStatus('Frontend demo mode'));
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   function notify(message) {
     setToast(message);
     window.setTimeout(() => setToast(''), 2200);
   }
 
-  function login(selectedRole) {
+  async function login(selectedRole) {
+    try {
+      await api.login(selectedRole);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setApiStatus('Frontend demo mode');
+    }
     setRole(selectedRole);
     setPage(navigation[selectedRole][0][0]);
     setSignedIn(true);
   }
 
-  function addProject(project) {
-    setProjects((current) => [{ ...project, id: current.length + 1, spent: 0, progress: 0, status: 'Planning' }, ...current]);
+  async function addProject(project) {
+    const draft = { ...project, spent: 0, progress: 0, status: 'Planning' };
+    try {
+      const saved = await api.createProject(draft);
+      setProjects((current) => [saved, ...current]);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setProjects((current) => [{ ...draft, id: Date.now() }, ...current]);
+      setApiStatus('Frontend demo mode');
+    }
     setPage('programs');
     notify('Project created');
   }
 
-  function addTask(task) {
-    setTasks((current) => [{ ...task, id: current.length + 1, status: 'Not Started' }, ...current]);
+  async function addTask(task) {
+    const draft = { ...task, status: 'Not Started' };
+    try {
+      const saved = await api.createTask(draft);
+      setTasks((current) => [saved, ...current]);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setTasks((current) => [{ ...draft, id: Date.now() }, ...current]);
+      setApiStatus('Frontend demo mode');
+    }
     notify('Task created under project');
   }
 
-  function addRequest(request) {
+  async function addRequest(request) {
     const next = {
       ...request,
       id: requests.length + 1,
@@ -75,31 +119,48 @@ function App() {
       referenceNo: 'Pending',
       variance: 0,
     };
-    setRequests((current) => [next, ...current]);
+    try {
+      const saved = await api.createRequest(next);
+      setRequests((current) => [saved, ...current]);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setRequests((current) => [next, ...current]);
+      setApiStatus('Frontend demo mode');
+    }
     notify('Request submitted');
   }
 
-  function updateRequest(id, status) {
-    setRequests((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status,
-              verifiedBy: status === 'Returned' ? 'Returned by Finance Officer' : 'Finance Officer',
-              executiveApproval: status === 'Approved' ? 'Approved' : item.executiveApproval,
-              boardApproval: status === 'Approved' ? 'Approved' : item.boardApproval,
-              comments: status === 'Returned' ? 'Correction requested before approval.' : 'Request updated through workflow.',
-              recommendations: status === 'Rejected' ? 'Do not proceed.' : 'Proceed with next workflow step.',
-            }
-          : item,
-      ),
-    );
+  async function updateRequest(id, status) {
+    const update = (item) => ({
+      ...item,
+      status,
+      verifiedBy: status === 'Returned' ? 'Returned by Finance Officer' : 'Finance Officer',
+      executiveApproval: status === 'Approved' ? 'Approved' : item.executiveApproval,
+      boardApproval: status === 'Approved' ? 'Approved' : item.boardApproval,
+      comments: status === 'Returned' ? 'Correction requested before approval.' : 'Request updated through workflow.',
+      recommendations: status === 'Rejected' ? 'Do not proceed.' : 'Proceed with next workflow step.',
+    });
+    try {
+      const saved = await api.updateRequestStatus(id, status);
+      setRequests((current) => current.map((item) => (item.id === id ? saved : item)));
+      setApiStatus('Connected to backend API');
+    } catch {
+      setRequests((current) => current.map((item) => (item.id === id ? update(item) : item)));
+      setApiStatus('Frontend demo mode');
+    }
     notify(`Request ${status.toLowerCase()}`);
   }
 
-  function addOperation(operation) {
-    setOperations((current) => [[operation.name, Number(operation.amount || 0), operation.responsible, operation.timeline, operation.remarks, operation.method], ...current]);
+  async function addOperation(operation) {
+    const next = [operation.name, Number(operation.amount || 0), operation.responsible, operation.timeline, operation.remarks, operation.method];
+    try {
+      const saved = await api.createAdminOperation(operation);
+      setOperations((current) => [saved, ...current]);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setOperations((current) => [next, ...current]);
+      setApiStatus('Frontend demo mode');
+    }
     notify('Admin operation created');
   }
 
@@ -121,8 +182,15 @@ function App() {
     setPage(role === 'finance' ? 'requests' : 'finance');
   }
 
-  function addUser(user) {
-    setUsers((current) => [[user.name, user.department, user.systemRole], ...current]);
+  async function addUser(user) {
+    try {
+      const saved = await api.createUser(user);
+      setUsers((current) => [saved, ...current]);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setUsers((current) => [[user.name, user.department, user.systemRole], ...current]);
+      setApiStatus('Frontend demo mode');
+    }
     notify('User added');
   }
 
@@ -134,7 +202,7 @@ function App() {
     <div className="app-shell">
       <Sidebar activeRole={activeRole} navItems={navItems} page={page} setPage={setPage} onLogout={() => setSignedIn(false)} />
       <main className="main">
-        <Topbar title={navItems.find(([id]) => id === page)?.[1] || 'Dashboard'} activeRole={activeRole} />
+        <Topbar title={navItems.find(([id]) => id === page)?.[1] || 'Dashboard'} activeRole={activeRole} apiStatus={apiStatus} />
         <div className="content">
           <Page
             role={role}
@@ -247,13 +315,14 @@ function Sidebar({ activeRole, navItems, page, setPage, onLogout }) {
   );
 }
 
-function Topbar({ title, activeRole }) {
+function Topbar({ title, activeRole, apiStatus }) {
   return (
     <header className="topbar">
       <div>
         <h2>{title}</h2>
         <span>{activeRole.name}</span>
       </div>
+      <span className={apiStatus.includes('backend') ? 'api-pill connected' : 'api-pill'}>{apiStatus}</span>
     </header>
   );
 }
