@@ -759,6 +759,33 @@ th {
   min-width: 170px;
 }
 
+.editable-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.inline-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.inline-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.compact-table {
+  min-width: 760px;
+}
+
 .flow {
   display: grid;
   gap: 8px;

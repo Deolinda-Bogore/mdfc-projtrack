@@ -11,10 +11,26 @@ const port = Number(process.env.PORT || 5174);
 const root = fileURLToPath(new URL('../dist', import.meta.url));
 const roles = new Set(['director', 'manager', 'employee', 'finance']);
 const sessions = new Map();
+const moduleConfig = {
+  budgets: { permission: 'manage_finance', label: 'budget row' },
+  payments: { permission: 'manage_finance', label: 'payment' },
+  suppliers: { permission: 'manage_finance', label: 'supplier' },
+  assets: { permission: 'manage_admin', label: 'asset' },
+  inventory: { permission: 'manage_admin', label: 'inventory item' },
+  travel: { permission: 'manage_admin', label: 'travel record' },
+  hr: { permission: 'manage_admin', label: 'HR record' },
+  evidence: { permission: 'manage_projects', label: 'M&E evidence' },
+  grants: { permission: 'manage_projects', label: 'grant' },
+};
 
 function sendJson(response, status, payload) {
   response.writeHead(status, { 'Content-Type': 'application/json' });
   response.end(JSON.stringify(payload));
+}
+
+function sendText(response, status, text, type = 'text/plain') {
+  response.writeHead(status, { 'Content-Type': type });
+  response.end(text);
 }
 
 function publicDatabase(data) {
@@ -95,6 +111,25 @@ function normalizeRequest(input, id) {
     approvalHistory: input.approvalHistory || [],
     uploads: input.uploads || [],
   };
+}
+
+function rowName(row) {
+  if (Array.isArray(row)) return row[0] || 'record';
+  return row?.name || row?.title || 'record';
+}
+
+function sanitizeModuleRow(row) {
+  return Array.isArray(row) ? row : Object.values(row || {});
+}
+
+function toCsv(rows) {
+  return rows
+    .map((row) =>
+      row
+        .map((cell) => `"${String(cell ?? '').replaceAll('"', '""')}"`)
+        .join(','),
+    )
+    .join('\n');
 }
 
 async function handleApi(request, response, url) {
@@ -185,17 +220,28 @@ async function handleApi(request, response, url) {
         notify(data, 'manager', `Budget blocked request ${requisition.code}`, requisition.code);
         return requisition;
       }
-      requisition.status = body.status;
-      requisition.verifiedBy = body.status === 'Returned' ? 'Returned by Finance Officer' : 'Finance Officer';
-      requisition.executiveApproval = body.status === 'Approved' ? 'Approved' : requisition.executiveApproval;
-      requisition.boardApproval = body.status === 'Approved' ? 'Approved' : requisition.boardApproval;
-      requisition.comments = body.status === 'Returned' ? 'Correction requested before approval.' : 'Request updated through workflow.';
-      requisition.recommendations = body.status === 'Rejected' ? 'Do not proceed.' : 'Proceed with next workflow step.';
+      if (body.status === 'Approved' && session.role === 'finance') {
+        requisition.status = 'Verified';
+        requisition.workflowStage = 'Executive Approval';
+        requisition.verifiedBy = 'Finance Officer';
+        requisition.executiveApproval = 'Pending';
+        requisition.comments = 'Finance verified budget and documents. Request moved to executive approval.';
+        requisition.recommendations = 'Executive approval required.';
+        notify(data, 'director', `Request ${requisition.code} is ready for executive approval`, requisition.code);
+      } else {
+        requisition.status = body.status;
+        requisition.workflowStage = body.status === 'Approved' ? 'Payment / Archive' : body.status;
+        requisition.verifiedBy = body.status === 'Returned' ? 'Returned by Finance Officer' : requisition.verifiedBy || 'Finance Officer';
+        requisition.executiveApproval = body.status === 'Approved' ? 'Approved' : requisition.executiveApproval;
+        requisition.boardApproval = body.status === 'Approved' ? 'Approved' : requisition.boardApproval;
+        requisition.comments = body.status === 'Returned' ? 'Correction requested before approval.' : 'Request updated through workflow.';
+        requisition.recommendations = body.status === 'Rejected' ? 'Do not proceed.' : 'Proceed with next workflow step.';
+      }
       requisition.approvalHistory = [
         ...(requisition.approvalHistory || []),
         { time: new Date().toISOString(), role: session.role, status: body.status, comment: requisition.comments },
       ];
-      if (body.status === 'Approved') applyApprovedRequestToBudget(data, requisition);
+      if (body.status === 'Approved' && session.role === 'director') applyApprovedRequestToBudget(data, requisition);
       audit(data, session.role, `Marked request ${body.status}`, requisition.code);
       notify(data, 'director', `Request ${requisition.code} marked ${body.status}`, requisition.code);
       return requisition;
@@ -277,6 +323,55 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  const moduleCreateMatch = url.pathname.match(/^\/api\/modules\/([\w-]+)$/);
+  if (request.method === 'POST' && moduleCreateMatch) {
+    const moduleName = moduleCreateMatch[1];
+    const config = moduleConfig[moduleName];
+    if (!config) {
+      sendJson(response, 404, { message: 'Module not found' });
+      return;
+    }
+    const session = requireSession(request, response, config.permission);
+    if (!session) return;
+    const body = await readBody(request);
+    const created = await updateDatabase((data) => {
+      const row = sanitizeModuleRow(body.row);
+      data[moduleName].unshift(row);
+      audit(data, session.role, `Created ${config.label}`, rowName(row));
+      return row;
+    });
+    sendJson(response, 201, created);
+    return;
+  }
+
+  const moduleItemMatch = url.pathname.match(/^\/api\/modules\/([\w-]+)\/(\d+)$/);
+  if ((request.method === 'PATCH' || request.method === 'DELETE') && moduleItemMatch) {
+    const moduleName = moduleItemMatch[1];
+    const index = Number(moduleItemMatch[2]);
+    const config = moduleConfig[moduleName];
+    if (!config) {
+      sendJson(response, 404, { message: 'Module not found' });
+      return;
+    }
+    const session = requireSession(request, response, config.permission);
+    if (!session) return;
+    const body = request.method === 'PATCH' ? await readBody(request) : {};
+    const updated = await updateDatabase((data) => {
+      if (!Array.isArray(data[moduleName]) || !data[moduleName][index]) return null;
+      if (request.method === 'DELETE') {
+        const [removed] = data[moduleName].splice(index, 1);
+        audit(data, session.role, `Deleted ${config.label}`, rowName(removed));
+        return removed;
+      }
+      const row = sanitizeModuleRow(body.row);
+      data[moduleName][index] = row;
+      audit(data, session.role, `Updated ${config.label}`, rowName(row));
+      return row;
+    });
+    sendJson(response, updated ? 200 : 404, updated || { message: 'Record not found' });
+    return;
+  }
+
   const reportMatch = url.pathname.match(/^\/api\/reports\/([\w-]+)$/);
   if (request.method === 'GET' && reportMatch) {
     const session = requireSession(request, response, 'reports');
@@ -311,6 +406,33 @@ async function handleApi(request, response, url) {
         entries: data.auditTrail,
       },
     };
+    if (url.searchParams.get('format') === 'csv') {
+      const csvRows = {
+        programs: [
+          ['Project', 'Progress', 'Budget', 'Spent'],
+          ...data.projects.map((item) => [item.title, item.progress, item.budget, item.spent]),
+        ],
+        finance: [
+          ['Project', 'Donor', 'Budget Line', 'Approved', 'Actual', 'Remaining', 'Forecast', 'Alert'],
+          ...data.budgets.map((row) => [row[0], row[1], row[3], row[4], row[5], row[6], row[7], row[8]]),
+        ],
+        administration: [
+          ['Area', 'Count'],
+          ['Operations', data.adminOperations.length],
+          ['Assets', data.assets.length],
+          ['Inventory', data.inventory.length],
+          ['Travel', data.travel.length],
+          ['HR Records', data.hr.length],
+        ],
+        audit: [
+          ['Time', 'User', 'Action', 'Record'],
+          ...data.auditTrail.map((item) => [item.time, item.user, item.action, item.record]),
+        ],
+      };
+      if (!csvRows[type]) sendJson(response, 404, { message: 'Report not found' });
+      else sendText(response, 200, toCsv(csvRows[type]), 'text/csv');
+      return;
+    }
     sendJson(response, reports[type] ? 200 : 404, reports[type] || { message: 'Report not found' });
     return;
   }

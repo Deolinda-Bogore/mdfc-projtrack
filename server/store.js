@@ -20,7 +20,7 @@ import {
   travel,
 } from '../src/data.js';
 
-const dbPath = fileURLToPath(new URL('./data/database.json', import.meta.url));
+const dbPath = process.env.MDFC_DB_PATH || fileURLToPath(new URL('./data/database.json', import.meta.url));
 
 function seedDatabase() {
   const demoPasswordHash = hashPassword('mdfc-demo');

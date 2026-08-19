@@ -18,6 +18,22 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+async function requestText(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status}`);
+  }
+
+  return response.text();
+}
+
 export const api = {
   bootstrap: () => request('/bootstrap'),
   login: async ({ role, email, password }) => {
@@ -35,4 +51,9 @@ export const api = {
   createUser: (user) => request('/users', { method: 'POST', body: JSON.stringify(user) }),
   createUpload: (upload) => request('/uploads', { method: 'POST', body: JSON.stringify(upload) }),
   exportReport: (type) => request(`/reports/${type}`),
+  exportReportCsv: (type) => requestText(`/reports/${type}?format=csv`),
+  createModuleRow: (moduleName, row) => request(`/modules/${moduleName}`, { method: 'POST', body: JSON.stringify({ row }) }),
+  updateModuleRow: (moduleName, index, row) =>
+    request(`/modules/${moduleName}/${index}`, { method: 'PATCH', body: JSON.stringify({ row }) }),
+  deleteModuleRow: (moduleName, index) => request(`/modules/${moduleName}/${index}`, { method: 'DELETE' }),
 };

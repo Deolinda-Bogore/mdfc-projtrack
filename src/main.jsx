@@ -2,22 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   adminOperations,
-  assets,
+  assets as seedAssets,
   auditTrail,
   budgets as seedBudgets,
-  evidence,
-  grants,
-  hr,
-  inventory,
+  evidence as seedEvidence,
+  grants as seedGrants,
+  hr as seedHr,
+  inventory as seedInventory,
   navigation,
-  payments,
+  payments as seedPayments,
   projects as seedProjects,
   requests as seedRequests,
   roles,
-  suppliers,
+  suppliers as seedSuppliers,
   systemBranches,
   tasks as seedTasks,
-  travel,
+  travel as seedTravel,
 } from './data.js';
 import { api } from './api.js';
 import './styles.css';
@@ -43,6 +43,14 @@ function App() {
   const [tasks, setTasks] = useState(seedTasks);
   const [requests, setRequests] = useState(seedRequests);
   const [budgetRows, setBudgetRows] = useState(seedBudgets);
+  const [paymentsRows, setPaymentsRows] = useState(seedPayments);
+  const [supplierRows, setSupplierRows] = useState(seedSuppliers);
+  const [assetRows, setAssetRows] = useState(seedAssets);
+  const [inventoryRows, setInventoryRows] = useState(seedInventory);
+  const [travelRows, setTravelRows] = useState(seedTravel);
+  const [hrRows, setHrRows] = useState(seedHr);
+  const [evidenceRows, setEvidenceRows] = useState(seedEvidence);
+  const [grantRows, setGrantRows] = useState(seedGrants);
   const [operations, setOperations] = useState(adminOperations);
   const [users, setUsers] = useState(Object.values(roles).map((item) => [item.name, item.label, item.description]));
   const [uploads, setUploads] = useState([]);
@@ -62,6 +70,14 @@ function App() {
         setTasks(data.tasks);
         setRequests(data.requests);
         setBudgetRows(data.budgets);
+        setPaymentsRows(data.payments);
+        setSupplierRows(data.suppliers);
+        setAssetRows(data.assets);
+        setInventoryRows(data.inventory);
+        setTravelRows(data.travel);
+        setHrRows(data.hr);
+        setEvidenceRows(data.evidence);
+        setGrantRows(data.grants);
         setOperations(data.adminOperations);
         setUsers(data.users.map(userToRow));
         setUploads(data.uploads || []);
@@ -222,6 +238,47 @@ function App() {
     notify('Document metadata saved');
   }
 
+  const moduleSetters = {
+    budgets: setBudgetRows,
+    payments: setPaymentsRows,
+    suppliers: setSupplierRows,
+    assets: setAssetRows,
+    inventory: setInventoryRows,
+    travel: setTravelRows,
+    hr: setHrRows,
+    evidence: setEvidenceRows,
+    grants: setGrantRows,
+  };
+
+  async function saveModuleRow(moduleName, row, index = null) {
+    const setter = moduleSetters[moduleName];
+    if (!setter) return;
+    try {
+      const saved = index === null
+        ? await api.createModuleRow(moduleName, row)
+        : await api.updateModuleRow(moduleName, index, row);
+      setter((current) => (index === null ? [saved, ...current] : current.map((item, itemIndex) => (itemIndex === index ? saved : item))));
+      setApiStatus('Connected to backend API');
+    } catch {
+      setter((current) => (index === null ? [row, ...current] : current.map((item, itemIndex) => (itemIndex === index ? row : item))));
+      setApiStatus('Frontend demo mode');
+    }
+    notify(index === null ? 'Record created' : 'Record updated');
+  }
+
+  async function deleteModuleRow(moduleName, index) {
+    const setter = moduleSetters[moduleName];
+    if (!setter) return;
+    try {
+      await api.deleteModuleRow(moduleName, index);
+      setApiStatus('Connected to backend API');
+    } catch {
+      setApiStatus('Frontend demo mode');
+    }
+    setter((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    notify('Record deleted');
+  }
+
   if (!signedIn) {
     return <Login selectedRole={role} setSelectedRole={setRole} onLogin={login} />;
   }
@@ -239,6 +296,14 @@ function App() {
             tasks={tasks}
             requests={requests}
             budgets={budgetRows}
+            paymentsRows={paymentsRows}
+            supplierRows={supplierRows}
+            assetRows={assetRows}
+            inventoryRows={inventoryRows}
+            travelRows={travelRows}
+            hrRows={hrRows}
+            evidenceRows={evidenceRows}
+            grantRows={grantRows}
             operations={operations}
             users={users}
             uploads={uploads}
@@ -250,6 +315,8 @@ function App() {
             sendOperationToFinance={sendOperationToFinance}
             addUser={addUser}
             addUpload={addUpload}
+            saveModuleRow={saveModuleRow}
+            deleteModuleRow={deleteModuleRow}
             notify={notify}
           />
         </div>
@@ -372,13 +439,13 @@ function Page(props) {
   if (page === 'tasks') return <Tasks {...props} employeeOnly={role === 'employee'} />;
   if (page === 'requests') return <Requests {...props} financeMode={role === 'finance' || role === 'director'} />;
   if (page === 'finance') return <Finance {...props} />;
-  if (page === 'budget') return <Budget budgets={props.budgets} />;
-  if (page === 'procurement') return <Procurement />;
-  if (page === 'payments') return <Payments />;
+  if (page === 'budget') return <Budget budgets={props.budgets} saveModuleRow={props.saveModuleRow} deleteModuleRow={props.deleteModuleRow} />;
+  if (page === 'procurement') return <Procurement supplierRows={props.supplierRows} saveModuleRow={props.saveModuleRow} deleteModuleRow={props.deleteModuleRow} />;
+  if (page === 'payments') return <Payments paymentsRows={props.paymentsRows} saveModuleRow={props.saveModuleRow} deleteModuleRow={props.deleteModuleRow} />;
   if (page === 'administration') return <Administration {...props} />;
   if (page === 'approvals') return <Requests {...props} financeMode />;
-  if (page === 'evidence') return <Evidence />;
-  if (page === 'grants') return <Grants />;
+  if (page === 'evidence') return <Evidence evidenceRows={props.evidenceRows} saveModuleRow={props.saveModuleRow} deleteModuleRow={props.deleteModuleRow} />;
+  if (page === 'grants') return <Grants grantRows={props.grantRows} saveModuleRow={props.saveModuleRow} deleteModuleRow={props.deleteModuleRow} />;
   if (page === 'worklog') return <WorkLog tasks={props.tasks} />;
   if (page === 'audit') return <Audit />;
   if (page === 'reports') return <Reports notify={props.notify} />;
@@ -548,7 +615,7 @@ function TaskForm({ projects, onSubmit }) {
   );
 }
 
-function Requests({ requests, addRequest, updateRequest, financeMode = false }) {
+function Requests({ role, requests, addRequest, updateRequest, financeMode = false }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -585,7 +652,7 @@ function Requests({ requests, addRequest, updateRequest, financeMode = false }) 
                       <span className="status">{item.status}</span>
                       {financeMode && (
                         <>
-                          <button className="primary small" onClick={() => updateRequest(item.id, 'Approved')} type="button">Approve</button>
+                          <button className="primary small" onClick={() => updateRequest(item.id, 'Approved')} type="button">{role === 'finance' ? 'Verify' : 'Approve'}</button>
                           <button className="secondary small" onClick={() => updateRequest(item.id, 'Returned')} type="button">Return</button>
                           <button className="danger small" onClick={() => updateRequest(item.id, 'Rejected')} type="button">Reject</button>
                         </>
@@ -674,19 +741,39 @@ function Flow() {
   );
 }
 
-function Budget({ budgets }) {
-  return <DataTable title="Budget Management" headers={['Project', 'Donor', 'Category', 'Budget Line', 'Approved Budget', 'Actual Expenditure', 'Remaining Balance', 'Forecast', 'Alert']} rows={budgets.map((row) => row.map((item, index) => index >= 4 && index <= 7 ? money(item) : item))} />;
+function Budget({ budgets, saveModuleRow, deleteModuleRow }) {
+  return (
+    <EditableTable
+      moduleName="budgets"
+      title="Budget Management"
+      headers={['Project', 'Donor', 'Category', 'Budget Line', 'Approved Budget', 'Actual Expenditure', 'Remaining Balance', 'Forecast', 'Alert']}
+      rows={budgets}
+      displayRows={budgets.map((row) => row.map((item, index) => index >= 4 && index <= 7 ? money(item) : item))}
+      onSave={saveModuleRow}
+      onDelete={deleteModuleRow}
+    />
+  );
 }
 
-function Procurement() {
-  return <DataTable title="Procurement and Supplier Management" headers={['Supplier Name', 'Category', 'Contact Person', 'Phone', 'Email', 'Contract End', 'Status', 'Uploaded Contract / Quotes']} rows={suppliers} />;
+function Procurement({ supplierRows, saveModuleRow, deleteModuleRow }) {
+  return <EditableTable moduleName="suppliers" title="Procurement and Supplier Management" headers={['Supplier Name', 'Category', 'Contact Person', 'Phone', 'Email', 'Contract End', 'Status', 'Uploaded Contract / Quotes']} rows={supplierRows} onSave={saveModuleRow} onDelete={deleteModuleRow} />;
 }
 
-function Payments() {
-  return <DataTable title="Finance and Payments" headers={['Payment Ref', 'Payee', 'Project', 'Donor', 'Budget Line', 'Amount', 'Method', 'Status']} rows={payments.map((row) => row.map((item, index) => index === 5 ? money(item) : item))} />;
+function Payments({ paymentsRows, saveModuleRow, deleteModuleRow }) {
+  return (
+    <EditableTable
+      moduleName="payments"
+      title="Finance and Payments"
+      headers={['Payment Ref', 'Payee', 'Project', 'Donor', 'Budget Line', 'Amount', 'Method', 'Status']}
+      rows={paymentsRows}
+      displayRows={paymentsRows.map((row) => row.map((item, index) => index === 5 ? money(item) : item))}
+      onSave={saveModuleRow}
+      onDelete={deleteModuleRow}
+    />
+  );
 }
 
-function Administration({ operations, addOperation, sendOperationToFinance }) {
+function Administration({ operations, addOperation, sendOperationToFinance, assetRows, inventoryRows, travelRows, hrRows, saveModuleRow, deleteModuleRow }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -713,10 +800,10 @@ function Administration({ operations, addOperation, sendOperationToFinance }) {
         </div>
       </Panel>
       <div className="grid two">
-        <DataTable title="Asset Register" headers={['Category', 'Name', 'Responsible', 'Contact', 'Status', 'Supporting Document']} rows={assets} />
-        <DataTable title="HR / Employee Records" headers={['Employee', 'Role', 'Department', 'Contract', 'Payroll', 'Remarks']} rows={hr} />
-        <DataTable title="Inventory" headers={['Item', 'Category', 'Qty', 'Assigned', 'Location', 'Status']} rows={inventory} />
-        <DataTable title="Travel and Vehicles" headers={['Vehicle', 'Purpose', 'Traveler', 'Destination', 'Date', 'Status']} rows={travel} />
+        <EditableTable moduleName="assets" title="Asset Register" headers={['Category', 'Name', 'Responsible', 'Contact', 'Status', 'Supporting Document']} rows={assetRows} onSave={saveModuleRow} onDelete={deleteModuleRow} compact />
+        <EditableTable moduleName="hr" title="HR / Employee Records" headers={['Employee', 'Role', 'Department', 'Contract', 'Payroll', 'Remarks']} rows={hrRows} onSave={saveModuleRow} onDelete={deleteModuleRow} compact />
+        <EditableTable moduleName="inventory" title="Inventory" headers={['Item', 'Category', 'Qty', 'Assigned', 'Location', 'Status']} rows={inventoryRows} onSave={saveModuleRow} onDelete={deleteModuleRow} compact />
+        <EditableTable moduleName="travel" title="Travel and Vehicles" headers={['Vehicle', 'Purpose', 'Traveler', 'Destination', 'Date', 'Status']} rows={travelRows} onSave={saveModuleRow} onDelete={deleteModuleRow} compact />
       </div>
     </>
   );
@@ -749,12 +836,12 @@ function AdminOperationForm({ onSubmit }) {
   );
 }
 
-function Evidence() {
-  return <DataTable title="M&E Evidence" headers={['Project', 'Activity', 'Data', 'Testimonials', 'Documentary / Videos', 'Survey Results', 'Status']} rows={evidence} />;
+function Evidence({ evidenceRows, saveModuleRow, deleteModuleRow }) {
+  return <EditableTable moduleName="evidence" title="M&E Evidence" headers={['Project', 'Activity', 'Data', 'Testimonials', 'Documentary / Videos', 'Survey Results', 'Status']} rows={evidenceRows} onSave={saveModuleRow} onDelete={deleteModuleRow} />;
 }
 
-function Grants() {
-  return <DataTable title="Grants Database" headers={['Grant Name', 'Funder', 'Who', 'Link', 'Progress', 'Remarks']} rows={grants} />;
+function Grants({ grantRows, saveModuleRow, deleteModuleRow }) {
+  return <EditableTable moduleName="grants" title="Grants Database" headers={['Grant Name', 'Funder', 'Who', 'Link', 'Progress', 'Remarks']} rows={grantRows} onSave={saveModuleRow} onDelete={deleteModuleRow} />;
 }
 
 function WorkLog({ tasks }) {
@@ -768,12 +855,12 @@ function Audit() {
 function Reports({ notify }) {
   async function exportReport(type, label) {
     try {
-      const report = await api.exportReport(type);
-      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const report = await api.exportReportCsv(type);
+      const blob = new Blob([report], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${type}-report.json`;
+      link.download = `${type}-report.csv`;
       link.click();
       URL.revokeObjectURL(url);
       notify(`${label} exported`);
@@ -912,6 +999,75 @@ function DataTable({ title, headers, rows }) {
           <tbody>
             {rows.map((row, rowIndex) => (
               <tr key={`${title}-${rowIndex}`}>{row.map((cell, index) => <td key={`${title}-${rowIndex}-${index}`}>{cell}</td>)}</tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
+function EditableTable({ moduleName, title, headers, rows, displayRows = rows, onSave, onDelete, compact = false }) {
+  const emptyRow = headers.map(() => '');
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [draft, setDraft] = useState(emptyRow);
+
+  function startCreate() {
+    setEditingIndex(null);
+    setDraft(emptyRow);
+    setFormOpen(true);
+  }
+
+  function startEdit(index) {
+    setEditingIndex(index);
+    setDraft([...rows[index]]);
+    setFormOpen(true);
+  }
+
+  function submit(event) {
+    event.preventDefault();
+    onSave(moduleName, draft, editingIndex);
+    setFormOpen(false);
+    setEditingIndex(null);
+    setDraft(emptyRow);
+  }
+
+  return (
+    <Panel title={title}>
+      <div className="editable-head">
+        <button className="primary small" onClick={startCreate} type="button">Add record</button>
+      </div>
+      {formOpen && (
+        <form className="inline-form" onSubmit={submit}>
+          {headers.map((header, index) => (
+            <Input
+              key={header}
+              label={header}
+              value={draft[index] ?? ''}
+              onChange={(value) => setDraft((current) => current.map((item, itemIndex) => (itemIndex === index ? value : item)))}
+            />
+          ))}
+          <div className="inline-actions">
+            <button className="primary small" type="submit">{editingIndex === null ? 'Create' : 'Save'}</button>
+            <button className="secondary small" onClick={() => setFormOpen(false)} type="button">Cancel</button>
+          </div>
+        </form>
+      )}
+      <div className="wide-table">
+        <table className={compact ? 'compact-table' : ''}>
+          <thead><tr>{headers.map((head) => <th key={head}>{head}</th>)}<th>Actions</th></tr></thead>
+          <tbody>
+            {displayRows.map((row, rowIndex) => (
+              <tr key={`${moduleName}-${rowIndex}`}>
+                {row.map((cell, index) => <td key={`${moduleName}-${rowIndex}-${index}`}>{cell}</td>)}
+                <td>
+                  <div className="action-stack">
+                    <button className="secondary small" onClick={() => startEdit(rowIndex)} type="button">Edit</button>
+                    <button className="danger small" onClick={() => onDelete(moduleName, rowIndex)} type="button">Delete</button>
+                  </div>
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>
