@@ -4,18 +4,28 @@ React + Vite implementation for the proposed MDFC Project Management System.
 
 ## Current MVP
 
-- Role-based workspace for Director, Manager, Employee/Implementor, and Finance Officer
+- Role-based workspace for Executive Director, Programs Manager, Finance Director, Administration, and Request Initiator
 - Project creation with workplan-style fields
 - Requisition database matching the current spreadsheet workflow
-- Approval stages: Prepared By, Verified By, Executive Approval, Board Approval, and Progress
-- Finance views for review, payments, budgets, and reports
-- Employee views for tasks, personal requests, and weekly work logs
+- Approval workflow: request initiator from any department → Finance Director review → Executive Director approval → Board approval where required → progress tracking
+- Finance Director views for request review, payments, budgets, and reports
+- Request Initiator views for tasks, personal requests, supporting documents, and weekly work logs
+- Administration views for monthly operations, assets, inventory, travel, HR records, documents, and reports
 - Local backend API with JSON persistence for projects, tasks, requests, admin operations, and users
 - Demo email/password authentication with hashed local passwords
-- Backend role permissions for Director, Manager, Employee/Implementor, and Finance
+- Backend role permissions for Executive Director, Programs Manager, Finance Director, Administration, and Request Initiator
 - Budget availability checks and budget updates when requests are approved
 - Supporting document register with local file-content storage for development
-- JSON report exports for Programs, Finance, Administration, and Audit
+- CSV report exports for the 8 prioritized MDFC reports:
+  - Project Dashboard
+  - Project Workplan & Activity Status Report
+  - MEAL/Indicator Performance Report
+  - Budget vs. Expenditure Report
+  - Beneficiary/Reach Report
+  - Risk & Issues Report
+  - Staff Task & Accountability Report
+  - Donor/Narrative Reporting Report
+- Internal notification records for request initiators, verifiers, approvers, and relevant users
 
 ## Run Locally
 
@@ -42,10 +52,11 @@ mdfc-demo
 
 Available emails:
 
-- `director@mdfc.rw`
-- `manager@mdfc.rw`
-- `employee@mdfc.rw`
-- `finance@mdfc.rw`
+- `executive.director@medicaldoctorsforchoice.org`
+- `programs.manager@medicaldoctorsforchoice.org`
+- `request.initiator@medicaldoctorsforchoice.org`
+- `finance.director@medicaldoctorsforchoice.org`
+- `administration@medicaldoctorsforchoice.org`
 
 To build and serve the production bundle locally:
 
@@ -59,3 +70,9 @@ npm start
 The current version now has a frontend MVP plus a local development backend with authentication, role permissions, persistence, budget checks, document storage, reports, notifications, and audit trail support.
 
 For production use, MDFC would still need to choose and configure a hosted database, secure file storage, email notification provider, domain/hosting, backups, and official staff accounts.
+
+## Production Recommendation
+
+For long-term use, Supabase with PostgreSQL is recommended because the PMS has strongly connected data: projects, activities, indicators, targets, budgets, timelines, staff roles, requisitions, approvals, documents, notifications, donor reports, and audit trails. Supabase can also support authentication, role-based access, secure storage, backups, and future email automation.
+
+For document storage, Supabase Storage is recommended if MDFC chooses Supabase/PostgreSQL, because uploaded quotations, invoices, contracts, receipts, reports, concept notes, and payment vouchers can be linked directly to the correct PMS records.

@@ -7,21 +7,27 @@ export const roles = {
   },
   manager: {
     label: 'Manager',
-    name: 'Program Manager',
+    name: 'Programs Manager',
     description: 'Programs and team',
     initials: 'PM',
   },
   employee: {
-    label: 'Employee',
-    name: 'Implementor',
-    description: 'My workspace',
-    initials: 'IM',
+    label: 'Initiator',
+    name: 'Request Initiator',
+    description: 'Submit and follow requests',
+    initials: 'RI',
   },
   finance: {
     label: 'Finance',
-    name: 'Finance Officer',
-    description: 'Finance desk',
-    initials: 'FO',
+    name: 'Finance Director',
+    description: 'Review and verification',
+    initials: 'FD',
+  },
+  administration: {
+    label: 'Administration',
+    name: 'Administration',
+    description: 'Operations and assets',
+    initials: 'AD',
   },
 };
 
@@ -54,6 +60,13 @@ export const navigation = {
     ['evidence', 'M&E Evidence'],
     ['documents', 'Documents'],
     ['worklog', 'My Work Log'],
+  ],
+  administration: [
+    ['dashboard', 'Administration Dashboard'],
+    ['administration', 'Administration'],
+    ['requests', 'Submit Request'],
+    ['documents', 'Documents'],
+    ['reports', 'Reports'],
   ],
   finance: [
     ['finance', 'Finance Dashboard'],
@@ -103,6 +116,17 @@ export const systemBranches = [
       'Track inventory, travel records, vehicles, renewals, administrative contracts, and reports.',
     ],
   },
+];
+
+export const priorityReports = [
+  ['project-dashboard', 'Project Dashboard'],
+  ['workplan-activity-status', 'Project Workplan & Activity Status Report'],
+  ['meal-indicator-performance', 'MEAL/Indicator Performance Report'],
+  ['budget-vs-expenditure', 'Budget vs. Expenditure Report'],
+  ['beneficiary-reach', 'Beneficiary/Reach Report'],
+  ['risk-issues', 'Risk & Issues Report'],
+  ['staff-task-accountability', 'Staff Task & Accountability Report'],
+  ['donor-narrative-reporting', 'Donor/Narrative Reporting Report'],
 ];
 
 export const projects = [
@@ -221,7 +245,7 @@ export const requests = [
     documents: 'Purchase request, quotation, approval memo',
     status: 'Submitted',
     preparedBy: 'Administrative Assistant',
-    verifiedBy: 'Finance Officer',
+    verifiedBy: 'Finance Director',
     executiveApproval: 'Pending',
     boardApproval: 'Pending',
     comments: 'Supporting documents should be complete before payment.',
@@ -246,7 +270,7 @@ export const requests = [
     documents: 'Attendance list, activity budget, payment list',
     status: 'Approved',
     preparedBy: 'Finance Assistant Intern',
-    verifiedBy: 'Finance Officer',
+    verifiedBy: 'Finance Director',
     executiveApproval: 'Approved',
     boardApproval: 'Approved',
     comments: 'Payment source confirmed and request is ready for approval.',
@@ -276,7 +300,7 @@ export const payments = [
 
 export const adminOperations = [
   ['Office rent', 450000, 'Administrative Assistant', '25th of each month', 'Monthly operation', 'Bank transfer'],
-  ['Taxes', 150000, 'Finance Officer', '15th of each month', 'Statutory filing', 'Bank transfer'],
+  ['Taxes', 150000, 'Finance Director', '15th of each month', 'Statutory filing', 'Bank transfer'],
   ['Monthly subscriptions', 85000, 'Administration', 'Monthly renewal', 'Internet and service tools', 'Card / transfer'],
 ];
 
@@ -314,6 +338,6 @@ export const grants = [
 
 export const auditTrail = [
   ['2026-08-05 09:10', 'Administrative Assistant', 'Created requisition', 'REQ-OPS-001', 'Operations Support', 'Core funds', 'Organisational costs', 'Archived'],
-  ['2026-08-05 09:40', 'Finance Officer', 'Verified budget availability', 'REQ-ACT-002', 'Partner Event Coordination', 'Health partner', 'Project activities', 'Logged'],
+  ['2026-08-05 09:40', 'Finance Director', 'Verified budget availability', 'REQ-ACT-002', 'Partner Event Coordination', 'Health partner', 'Project activities', 'Logged'],
   ['2026-08-05 10:05', 'Executive Director', 'Approved request', 'REQ-ACT-002', 'Partner Event Coordination', 'Health partner', 'Project activities', 'Logged'],
 ];

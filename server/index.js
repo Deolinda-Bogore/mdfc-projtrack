@@ -9,7 +9,7 @@ import { audit, nextId, notify, readDatabase, updateDatabase } from './store.js'
 const host = '127.0.0.1';
 const port = Number(process.env.PORT || 5174);
 const root = fileURLToPath(new URL('../dist', import.meta.url));
-const roles = new Set(['director', 'manager', 'employee', 'finance']);
+const roles = new Set(['director', 'manager', 'employee', 'finance', 'administration']);
 const sessions = new Map();
 const moduleConfig = {
   budgets: { permission: 'manage_finance', label: 'budget row' },
@@ -67,6 +67,14 @@ function createToken(user) {
   return token;
 }
 
+function roleForDepartment(department = '') {
+  const value = String(department).toLowerCase();
+  if (value.includes('admin')) return 'administration';
+  if (value.includes('finance')) return 'finance';
+  if (value.includes('program') || value.includes('meal') || value.includes('m&e')) return 'manager';
+  return 'employee';
+}
+
 function findBudget(data, requisition) {
   return data.budgets.find((row) => row[0] === requisition.project || row[3] === requisition.budgetLine);
 }
@@ -107,7 +115,7 @@ function normalizeRequest(input, id) {
     spentAmount: Number(input.spentAmount || 0),
     variance: Number(input.variance || 0),
     referenceNo: input.referenceNo || 'Pending',
-    workflowStage: input.workflowStage || 'Finance Verification',
+    workflowStage: input.workflowStage || 'Finance Director Review',
     approvalHistory: input.approvalHistory || [],
     uploads: input.uploads || [],
   };
@@ -195,7 +203,8 @@ async function handleApi(request, response, url) {
         : 'Budget not available. Request needs revision or budget adjustment.';
       data.requests.unshift(requisition);
       audit(data, body.preparedBy || body.requestingTitle || session.role, 'Created requisition', requisition.code);
-      notify(data, 'finance', `New requisition ready for review: ${requisition.code}`, requisition.code);
+      notify(data, 'finance', `New requisition ready for Finance Director review: ${requisition.code}`, requisition.code);
+      notify(data, roleForDepartment(requisition.department), `Your request ${requisition.code} has been submitted`, requisition.code);
       return requisition;
     });
     sendJson(response, 201, created);
@@ -222,20 +231,23 @@ async function handleApi(request, response, url) {
       }
       if (body.status === 'Approved' && session.role === 'finance') {
         requisition.status = 'Verified';
-        requisition.workflowStage = 'Executive Approval';
-        requisition.verifiedBy = 'Finance Officer';
+        requisition.workflowStage = 'Executive Director Approval';
+        requisition.verifiedBy = 'Finance Director';
         requisition.executiveApproval = 'Pending';
-        requisition.comments = 'Finance verified budget and documents. Request moved to executive approval.';
+        requisition.comments = 'Finance Director reviewed the request. It has moved to Executive Director approval.';
         requisition.recommendations = 'Executive approval required.';
         notify(data, 'director', `Request ${requisition.code} is ready for executive approval`, requisition.code);
+        notify(data, roleForDepartment(requisition.department), `Your request ${requisition.code} was verified by Finance Director`, requisition.code);
       } else {
         requisition.status = body.status;
-        requisition.workflowStage = body.status === 'Approved' ? 'Payment / Archive' : body.status;
-        requisition.verifiedBy = body.status === 'Returned' ? 'Returned by Finance Officer' : requisition.verifiedBy || 'Finance Officer';
+        requisition.workflowStage = body.status === 'Approved' ? 'Progress Tracking' : body.status;
+        requisition.verifiedBy = body.status === 'Returned' ? 'Returned by Finance Director' : requisition.verifiedBy || 'Finance Director';
         requisition.executiveApproval = body.status === 'Approved' ? 'Approved' : requisition.executiveApproval;
         requisition.boardApproval = body.status === 'Approved' ? 'Approved' : requisition.boardApproval;
         requisition.comments = body.status === 'Returned' ? 'Correction requested before approval.' : 'Request updated through workflow.';
         requisition.recommendations = body.status === 'Rejected' ? 'Do not proceed.' : 'Proceed with next workflow step.';
+        notify(data, 'finance', `Request ${requisition.code} was updated by ${session.name}`, requisition.code);
+        notify(data, roleForDepartment(requisition.department), `Your request ${requisition.code} was ${body.status.toLowerCase()}`, requisition.code);
       }
       requisition.approvalHistory = [
         ...(requisition.approvalHistory || []),
@@ -243,7 +255,6 @@ async function handleApi(request, response, url) {
       ];
       if (body.status === 'Approved' && session.role === 'director') applyApprovedRequestToBudget(data, requisition);
       audit(data, session.role, `Marked request ${body.status}`, requisition.code);
-      notify(data, 'director', `Request ${requisition.code} marked ${body.status}`, requisition.code);
       return requisition;
     });
     sendJson(response, updated ? 200 : 404, updated || { message: 'Request not found' });
@@ -275,13 +286,15 @@ async function handleApi(request, response, url) {
         ? 'finance'
         : requestedRole.includes('director')
           ? 'director'
-          : requestedRole.includes('manager')
+          : requestedRole.includes('admin')
+            ? 'administration'
+            : requestedRole.includes('manager')
             ? 'manager'
             : 'employee';
       const user = {
         id: nextId(data.users),
         name: body.name,
-        email: body.email || `${body.name.toLowerCase().replaceAll(' ', '.')}@mdfc.rw`,
+        email: body.email || `${body.name.toLowerCase().replaceAll(' ', '.')}@medicaldoctorsforchoice.org`,
         department: body.department,
         role,
         title: body.title || body.systemRole,
@@ -378,55 +391,77 @@ async function handleApi(request, response, url) {
     if (!session) return;
     const type = reportMatch[1];
     const data = await readDatabase();
+    const now = new Date().toISOString();
     const reports = {
-      programs: {
-        generatedAt: new Date().toISOString(),
-        projects: data.projects.length,
-        tasks: data.tasks.length,
+      'project-dashboard': {
+        generatedAt: now,
+        projectCount: data.projects.length,
         activeProjects: data.projects.filter((item) => item.status === 'Active').length,
-        projectProgress: data.projects.map((item) => ({ title: item.title, progress: item.progress, budget: item.budget, spent: item.spent })),
+        submittedRequests: data.requests.filter((item) => item.status === 'Submitted').length,
+        projects: data.projects.map((item) => ({ title: item.title, donor: item.donor, progress: item.progress, budget: item.budget, spent: item.spent })),
       },
-      finance: {
-        generatedAt: new Date().toISOString(),
-        requests: data.requests.length,
-        pendingRequests: data.requests.filter((item) => item.status === 'Submitted').length,
-        approvedRequests: data.requests.filter((item) => item.status === 'Approved').length,
+      'workplan-activity-status': {
+        generatedAt: now,
+        activities: data.tasks.map((item) => ({ projectId: item.projectId, activity: item.title, status: item.status, assignee: item.assignee, due: item.due, outputs: item.outputs })),
+      },
+      'meal-indicator-performance': {
+        generatedAt: now,
+        indicators: data.evidence.map((row) => ({ project: row[0], activity: row[1], data: row[2], surveyResults: row[5], status: row[6] })),
+      },
+      'budget-vs-expenditure': {
+        generatedAt: now,
         budgets: data.budgets.map((row) => ({ project: row[0], donor: row[1], budgetLine: row[3], approved: row[4], actual: row[5], remaining: row[6], forecast: row[7], alert: row[8] })),
       },
-      administration: {
-        generatedAt: new Date().toISOString(),
-        operations: data.adminOperations.length,
-        assets: data.assets.length,
-        inventory: data.inventory.length,
-        travel: data.travel.length,
-        hrRecords: data.hr.length,
+      'beneficiary-reach': {
+        generatedAt: now,
+        reachRecords: data.evidence.map((row) => ({ project: row[0], activity: row[1], dataSource: row[2], testimonials: row[3], status: row[6] })),
       },
-      audit: {
-        generatedAt: new Date().toISOString(),
-        entries: data.auditTrail,
+      'risk-issues': {
+        generatedAt: now,
+        issues: data.tasks.map((item) => ({ projectId: item.projectId, activity: item.title, challenges: item.challenges || 'No challenge recorded', remarks: item.remarks || '', status: item.status })),
+      },
+      'staff-task-accountability': {
+        generatedAt: now,
+        tasks: data.tasks.map((item) => ({ task: item.title, assignee: item.assignee, status: item.status, priority: item.priority, due: item.due })),
+      },
+      'donor-narrative-reporting': {
+        generatedAt: now,
+        grants: data.grants.map((row) => ({ grant: row[0], funder: row[1], owner: row[2], progress: row[4], remarks: row[5] })),
       },
     };
     if (url.searchParams.get('format') === 'csv') {
       const csvRows = {
-        programs: [
-          ['Project', 'Progress', 'Budget', 'Spent'],
-          ...data.projects.map((item) => [item.title, item.progress, item.budget, item.spent]),
+        'project-dashboard': [
+          ['Project', 'Donor', 'Progress', 'Budget', 'Spent'],
+          ...data.projects.map((item) => [item.title, item.donor, item.progress, item.budget, item.spent]),
         ],
-        finance: [
+        'workplan-activity-status': [
+          ['Project ID', 'Activity', 'Status', 'Assignee', 'Due Date', 'Outputs'],
+          ...data.tasks.map((item) => [item.projectId, item.title, item.status, item.assignee, item.due, item.outputs]),
+        ],
+        'meal-indicator-performance': [
+          ['Project', 'Activity', 'Data', 'Survey Results', 'Status'],
+          ...data.evidence.map((row) => [row[0], row[1], row[2], row[5], row[6]]),
+        ],
+        'budget-vs-expenditure': [
           ['Project', 'Donor', 'Budget Line', 'Approved', 'Actual', 'Remaining', 'Forecast', 'Alert'],
           ...data.budgets.map((row) => [row[0], row[1], row[3], row[4], row[5], row[6], row[7], row[8]]),
         ],
-        administration: [
-          ['Area', 'Count'],
-          ['Operations', data.adminOperations.length],
-          ['Assets', data.assets.length],
-          ['Inventory', data.inventory.length],
-          ['Travel', data.travel.length],
-          ['HR Records', data.hr.length],
+        'beneficiary-reach': [
+          ['Project', 'Activity', 'Data Source', 'Testimonials', 'Status'],
+          ...data.evidence.map((row) => [row[0], row[1], row[2], row[3], row[6]]),
         ],
-        audit: [
-          ['Time', 'User', 'Action', 'Record'],
-          ...data.auditTrail.map((item) => [item.time, item.user, item.action, item.record]),
+        'risk-issues': [
+          ['Project ID', 'Activity', 'Challenges', 'Remarks', 'Status'],
+          ...data.tasks.map((item) => [item.projectId, item.title, item.challenges || 'No challenge recorded', item.remarks || '', item.status]),
+        ],
+        'staff-task-accountability': [
+          ['Task', 'Assignee', 'Status', 'Priority', 'Due Date'],
+          ...data.tasks.map((item) => [item.title, item.assignee, item.status, item.priority, item.due]),
+        ],
+        'donor-narrative-reporting': [
+          ['Grant', 'Funder', 'Owner', 'Progress', 'Remarks'],
+          ...data.grants.map((row) => [row[0], row[1], row[2], row[4], row[5]]),
         ],
       };
       if (!csvRows[type]) sendJson(response, 404, { message: 'Report not found' });

@@ -11,6 +11,7 @@ import {
   inventory as seedInventory,
   navigation,
   payments as seedPayments,
+  priorityReports,
   projects as seedProjects,
   requests as seedRequests,
   roles,
@@ -25,10 +26,11 @@ import './styles.css';
 const logoSrc = '/mdfc-logo.png';
 const money = (value) => `RWF ${Number(value || 0).toLocaleString()}`;
 const roleEmails = {
-  director: 'director@mdfc.rw',
-  manager: 'manager@mdfc.rw',
-  employee: 'employee@mdfc.rw',
-  finance: 'finance@mdfc.rw',
+  director: 'executive.director@medicaldoctorsforchoice.org',
+  manager: 'programs.manager@medicaldoctorsforchoice.org',
+  employee: 'request.initiator@medicaldoctorsforchoice.org',
+  finance: 'finance.director@medicaldoctorsforchoice.org',
+  administration: 'administration@medicaldoctorsforchoice.org',
 };
 
 function userToRow(user) {
@@ -164,7 +166,7 @@ function App() {
     const update = (item) => ({
       ...item,
       status,
-      verifiedBy: status === 'Returned' ? 'Returned by Finance Officer' : 'Finance Officer',
+      verifiedBy: status === 'Returned' ? 'Returned by Finance Director' : 'Finance Director',
       executiveApproval: status === 'Approved' ? 'Approved' : item.executiveApproval,
       boardApproval: status === 'Approved' ? 'Approved' : item.boardApproval,
       comments: status === 'Returned' ? 'Correction requested before approval.' : 'Request updated through workflow.',
@@ -463,7 +465,7 @@ function Dashboard({ role, projects, tasks, requests }) {
       <section className="hero">
         <p className="eyebrow">{roles[role].label} workspace</p>
         <h1>{greeting}</h1>
-        <span>Programs, Finance, and Administration are connected through requests, budgets, documents, and audit history.</span>
+        <span>Executive Director, Programs Manager, Finance Director, Administration, and request initiators are connected through requests, budgets, documents, notifications, and audit history.</span>
       </section>
       <div className="stats">
         <Stat label="Projects" value={projects.length} />
@@ -482,6 +484,14 @@ function Dashboard({ role, projects, tasks, requests }) {
           </Panel>
         ))}
       </div>
+      <Panel title="Production Recommendation">
+        <p className="muted">
+          For long-term use, Supabase with PostgreSQL is recommended because MDFC data is connected across projects,
+          activities, indicators, budgets, requisitions, approvals, users, documents, notifications, donor reports,
+          and audit trails. Supabase Storage is recommended for supporting documents so files can be securely linked to
+          the correct project, request, payment, supplier, asset, or report.
+        </p>
+      </Panel>
       <div className="grid two">
         <Panel title="Recent Requests">
           {requests.map((item) => <Row key={item.id} title={item.details} meta={`${item.code} - ${money(item.amount)}`} status={item.status} />)}
@@ -734,7 +744,7 @@ function Finance({ projects, requests }) {
 function Flow() {
   return (
     <div className="flow">
-      {['Request Preparator / Initiator', 'Finance Department Lead', 'Executive Director', 'Chair of Board', 'Permission and payment execution'].map((stage) => (
+      {['Request initiator from any department', 'Finance Director review', 'Executive Director approval', 'Board approval when required', 'Progress tracking for initiated request'].map((stage) => (
         <div className="flow-step" key={stage}>{stage}</div>
       ))}
     </div>
@@ -869,15 +879,9 @@ function Reports({ notify }) {
     }
   }
 
-  const reports = [
-    ['programs', 'Programs Report'],
-    ['finance', 'Finance Report'],
-    ['administration', 'Administration Report'],
-  ];
-
   return (
     <div className="grid three">
-      {reports.map(([type, title]) => (
+      {priorityReports.map(([type, title]) => (
         <Panel title={title} key={title}>
           <p className="muted">Export-ready summary for management review.</p>
           <button className="secondary" onClick={() => exportReport(type, title)} type="button">Export</button>
@@ -1167,13 +1171,13 @@ function Datalists() {
   return (
     <>
       <datalist id="titles">
-        {['Project Lead', 'Implementor', 'Finance Officer', 'M&E Officer', 'Administrative Assistant', 'Executive Director', 'Board Chair'].map((item) => <option value={item} key={item} />)}
+        {['Project Lead', 'Request Initiator', 'Finance Director', 'M&E Officer', 'Administrative Assistant', 'Executive Director', 'Board Chair'].map((item) => <option value={item} key={item} />)}
       </datalist>
       <datalist id="departments">
         {['Programs', 'Finance', 'Administration', 'Human Resources', 'Procurement', 'Digital Innovation'].map((item) => <option value={item} key={item} />)}
       </datalist>
       <datalist id="system-roles">
-        {['Director', 'Manager', 'Employee', 'Finance Officer', 'Administrator', 'Viewer'].map((item) => <option value={item} key={item} />)}
+        {['Director', 'Programs Manager', 'Request Initiator', 'Finance Director', 'Administration', 'Viewer'].map((item) => <option value={item} key={item} />)}
       </datalist>
       <datalist id="projects">
         {seedProjects.map((project) => <option value={project.title} key={project.title} />)}

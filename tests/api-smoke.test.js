@@ -48,9 +48,9 @@ async function login(role, email) {
 try {
   await waitForServer();
 
-  const managerToken = await login('manager', 'manager@mdfc.rw');
-  const financeToken = await login('finance', 'finance@mdfc.rw');
-  const directorToken = await login('director', 'director@mdfc.rw');
+  const managerToken = await login('manager', 'programs.manager@medicaldoctorsforchoice.org');
+  const financeToken = await login('finance', 'finance.director@medicaldoctorsforchoice.org');
+  const directorToken = await login('director', 'executive.director@medicaldoctorsforchoice.org');
 
   const blockedUserCreate = await json('/api/users', {
     method: 'POST',
@@ -71,7 +71,7 @@ try {
     headers: { Authorization: `Bearer ${managerToken}` },
     body: JSON.stringify({
       requestDate: '2026-08-20',
-      requestingTitle: 'Program Manager',
+      requestingTitle: 'Programs Manager',
       department: 'Programs',
       project: 'Smoke Project',
       donor: 'Smoke Donor',
@@ -80,7 +80,7 @@ try {
       item: 'Testing support',
       amount: 100,
       documents: 'Test quotation',
-      preparedBy: 'Program Manager',
+      preparedBy: 'Programs Manager',
     }),
   });
   assert.equal(createdRequest.response.status, 201);
@@ -116,7 +116,7 @@ try {
   });
   assert.equal(upload.response.status, 201);
 
-  const csvResponse = await fetch(`${baseUrl}/api/reports/finance?format=csv`, {
+  const csvResponse = await fetch(`${baseUrl}/api/reports/budget-vs-expenditure?format=csv`, {
     headers: { Authorization: `Bearer ${financeToken}` },
   });
   assert.equal(csvResponse.status, 200);

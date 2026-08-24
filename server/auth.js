@@ -26,6 +26,7 @@ export function can(role, action) {
     manager: ['read', 'manage_projects', 'manage_admin', 'reports', 'upload'],
     employee: ['read', 'create_request', 'upload'],
     finance: ['read', 'finance_review', 'manage_finance', 'reports', 'upload'],
+    administration: ['read', 'create_request', 'manage_admin', 'reports', 'upload'],
   };
   return permissions[role]?.includes(action);
 }
