@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { can, hashPassword, publicUser, verifyPassword } from './auth.js';
 import { audit, nextId, notify, readDatabase, updateDatabase } from './store.js';
 
-const host = '127.0.0.1';
+const host = process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
 const port = Number(process.env.PORT || 5174);
 const root = fileURLToPath(new URL('../dist', import.meta.url));
 const roles = new Set(['director', 'manager', 'employee', 'finance', 'administration']);

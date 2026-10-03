@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { hashPassword } from './auth.js';
 import {
@@ -20,7 +20,7 @@ import {
   travel,
 } from '../src/data.js';
 
-const dbPath = process.env.MDFC_DB_PATH || fileURLToPath(new URL('./data/database.json', import.meta.url));
+const dbPath = process.env.MDFC_DB_PATH || (process.env.DATA_DIR ? join(process.env.DATA_DIR, 'database.json') : fileURLToPath(new URL('./data/database.json', import.meta.url)));
 
 function seedDatabase() {
   const demoPasswordHash = hashPassword('mdfc-demo');

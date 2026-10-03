@@ -164,6 +164,8 @@ node_modules/
 dist/
 .vite/
 *.local
+data/app-state.json
+server/data/database.json
 
 # macOS / old static export artifacts
 .DS_Store

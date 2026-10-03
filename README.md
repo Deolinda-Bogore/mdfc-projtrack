@@ -65,6 +65,24 @@ npm run build
 npm start
 ```
 
+## Andasy Deployment
+
+The repository includes the deployment files needed by Andasy:
+
+- `Dockerfile`
+- `.dockerignore`
+- `andasy.hcl`
+
+From the repository folder, deploy with:
+
+```bash
+andasy deploy
+```
+
+The app listens on port `8080` in production. The local JSON database is written to `/app/data/database.json`, and `andasy.hcl` maps `/app/data` to persistent storage named `mdfc-projtrack-data`.
+
+For the current local-backend version, demo accounts use `mdfc-demo`. Before real production use, replace demo credentials with official staff accounts and connect a hosted database and secure file storage.
+
 ## Implementation Direction
 
 The current version now has a frontend MVP plus a local development backend with authentication, role permissions, persistence, budget checks, document storage, reports, notifications, and audit trail support.
